@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#222335</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="increase">#FF4081</color>
+    <color name="navy">#222335</color>
+    <color name="dark_navy">#1a1a28</color>
+</resources>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:background="@color/navy"
+    android:layout_height="match_parent"
+    android:weightSum="2"
+    tools:context="com.edge.coin.MainActivity">
+    <android.support.v7.widget.Toolbar
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:contentInsetStart="0dp">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="다내꺼"
+                android:textSize="18dp"
+                android:textColor="@android:color/white"
+                android:layout_centerInParent="true"/>
+        </RelativeLayout>
+    </android.support.v7.widget.Toolbar>
+
+    <android.support.v7.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.5"
+        app:cardBackgroundColor="@color/dark_navy"
+        app:cardCornerRadius="10dp"
+        android:layout_margin="10dp"
+        app:cardUseCompatPadding="true">
+        <com.github.mikephil.charting.charts.CombinedChart
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="10dp"
+            android:id="@+id/candle" />
+    </android.support.v7.widget.CardView>
+
+</LinearLayout>
