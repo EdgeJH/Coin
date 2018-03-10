@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
 import com.github.mikephil.charting.charts.CombinedChart;
+import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.CandleData;
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Entry> line10Entries = new ArrayList<>();
     ArrayList<Entry> line20Entries = new ArrayList<>();
     ArrayList<Entry> line60Entries = new ArrayList<>();
+    ArrayList<Entry> rsiEndtries = new ArrayList<>();
     CandleDataSet dataSet;
     CombinedData combinedData = new CombinedData();
     CombinedChart combinedChart;
@@ -46,6 +48,11 @@ public class MainActivity extends AppCompatActivity {
     LineDataSet line20DataSet;
     LineData lineData;
     LineDataSet line5DataSet;
+
+    LineData rsiData;
+    LineDataSet rsiDataSet;
+
+    LineChart rsiChart;
     Timer timer;
     TimerTask timerTask;
     String firstDate;
@@ -64,6 +71,24 @@ public class MainActivity extends AppCompatActivity {
         combinedChart = findViewById(R.id.candle);
         combinedChart.getDescription().setEnabled(false);
         combinedChart.getLegend().setEnabled(false);
+
+        rsiChart = findViewById(R.id.rsi);
+        rsiChart.getDescription().setEnabled(false);
+        rsiChart.getLegend().setEnabled(false);
+        XAxis rsiXAxis = rsiChart.getXAxis();
+        rsiXAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        rsiXAxis.setDrawGridLines(true);
+        rsiXAxis.setTextColor(Color.LTGRAY);
+        rsiXAxis.setAxisLineColor(Color.LTGRAY);
+        YAxis rsiLeftAxis = rsiChart.getAxisLeft();
+        rsiLeftAxis.setEnabled(false);
+        YAxis rsiRightAxis = rsiChart.getAxisRight();
+        rsiRightAxis.setEnabled(true);
+        rsiRightAxis.setDrawGridLines(true);
+        rsiRightAxis.setTextColor(Color.LTGRAY);
+        rsiRightAxis.setAxisLineColor(Color.LTGRAY);
+        rsiRightAxis.setLabelCount(5);
+
         combinedChart.setDrawOrder(new CombinedChart.DrawOrder[]{CombinedChart.DrawOrder.CANDLE, CombinedChart.DrawOrder.LINE});
         XAxis xAxis = combinedChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -84,9 +109,7 @@ public class MainActivity extends AppCompatActivity {
         combinedChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override
             public void onValueSelected(Entry e, Highlight h) {
-                if (e.getData() != null) {
-                    Log.d("test123", e.getData().getClass().toString());
-                }
+                Log.d("test1234", e.getY() + ".");
             }
 
             @Override
@@ -103,7 +126,6 @@ public class MainActivity extends AppCompatActivity {
 
         dataSet.setDrawIcons(false);
         dataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
-//        set1.setColor(Color.rgb(80, 80, 80));
         dataSet.setBarSpace(0.3f);
         dataSet.setShadowWidth(0.7f);
         dataSet.setShadowColorSameAsCandle(true);
@@ -111,19 +133,23 @@ public class MainActivity extends AppCompatActivity {
         dataSet.setDecreasingPaintStyle(Paint.Style.FILL);
         dataSet.setIncreasingColor(Color.rgb(122, 242, 84));
         dataSet.setIncreasingPaintStyle(Paint.Style.STROKE);
-        dataSet.setNeutralColor(Color.WHITE);
+        dataSet.setNeutralColor(Color.DKGRAY);
+
         dataSet.setValueTextColor(Color.TRANSPARENT);
         dataSet.setHighlightEnabled(true);
 
         line5DataSet = new LineDataSet(line5Entries, "");
+        line5DataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
         line5DataSet.setDrawCircles(false);
-
+        line5DataSet.setDrawValues(false);
         line5DataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         line5DataSet.setLineWidth(1f);
 
 
         line10DataSet = new LineDataSet(line10Entries, "");
         line10DataSet.setDrawCircles(false);
+        line10DataSet.setDrawValues(false);
+        line10DataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
         line10DataSet.setColor(Color.MAGENTA);
         line10DataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         line10DataSet.setLineWidth(1f);
@@ -131,16 +157,22 @@ public class MainActivity extends AppCompatActivity {
 
         line20DataSet = new LineDataSet(line20Entries, "");
         line20DataSet.setDrawCircles(false);
+        line20DataSet.setDrawValues(false);
+        line20DataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
         line20DataSet.setColor(Color.YELLOW);
         line20DataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         line20DataSet.setLineWidth(1f);
 
 
         line60DataSet = new LineDataSet(line60Entries, "");
+        line60DataSet.setDrawValues(false);
         line60DataSet.setDrawCircles(false);
+        line60DataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
         line60DataSet.setColor(Color.GREEN);
         line60DataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         line60DataSet.setLineWidth(1f);
+
+
 
 
         lineData = new LineData(line5DataSet, line10DataSet, line20DataSet, line60DataSet);
@@ -150,40 +182,78 @@ public class MainActivity extends AppCompatActivity {
         combinedChart.setData(combinedData);
         combinedChart.invalidate();
 
+
+
+    }
+
+    private void setRsiChart(){
+
+
+        rsiDataSet = new LineDataSet(rsiEndtries, "");
+        rsiDataSet.setDrawValues(false);
+        rsiDataSet.setDrawCircles(false);
+        rsiDataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
+        rsiDataSet.setColor(Color.MAGENTA);
+        rsiDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        rsiDataSet.setLineWidth(1f);
+
+
+        rsiData = new LineData(rsiDataSet);
+        rsiChart.setData(rsiData);
+        rsiChart.invalidate();
     }
 
 
+    private void setRsiData(ArrayList<CandleEntry> array, int guideDay) {
+        for (int i = 0; i < array.size(); i++) {
+            if (i >= (int) guideDay - 1) {
+                int upPrice = 0;
+                int downPrice = 0;
+                for (int j = 0; j < guideDay; j++) {
+                    CandleEntry data = array.get(i - j);
+                    if (data.getOpen() - data.getClose() > 0) {
+                        downPrice += data.getBodyRange();
+
+                    } else {
+                        upPrice += data.getBodyRange();
+                    }
+                }
+                int rsi = 100-(100/(1+((upPrice/guideDay)/(downPrice/guideDay))));
+                Log.d("test123",rsi+","+upPrice+","+(upPrice-downPrice)+","+downPrice);
+
+                rsiEndtries.add(new Entry(guideDay-1+rsiEndtries.size(),rsi));
+            }
+        }
+        setRsiChart();
+    }
+
     private void setLineData(ArrayList<CandleEntry> array, float guideDay) {
         for (int i = 0; i < array.size(); i++) {
-            if (i>= (int)guideDay-1) {
+            if (i >= (int) guideDay - 1) {
                 int tradePrice = 0;
                 for (int j = 0; j < guideDay; j++) {
-                        CandleEntry data = array.get( i -j);
-                        tradePrice += data.getClose();
-                    Log.d("test1234",tradePrice+",,"+(long)tradePrice/guideDay +",,."+(long)data.getClose()+",,"+(i-j));
+                    tradePrice += (int) array.get(i - j).getClose();
                 }
-                int day= (int) guideDay;
+                int day = (int) guideDay;
                 switch (day) {
                     case 5:
-                        Log.d("test1234",(long)tradePrice/guideDay +",,.");
-
-                        line5Entries.add(new Entry(guideDay-1 + line5Entries.size(), (long)tradePrice / guideDay));
+                        line5Entries.add(new Entry(guideDay - 1 + line5Entries.size(), (long) tradePrice / guideDay));
                         break;
                     case 10:
-                        line10Entries.add(new Entry(guideDay  -1+ line10Entries.size(), (long)tradePrice / guideDay));
+                        line10Entries.add(new Entry(guideDay - 1 + line10Entries.size(), (long) tradePrice / guideDay));
                         break;
                     case 20:
-                        line20Entries.add(new Entry(guideDay-1  + line20Entries.size(), (long)tradePrice / guideDay));
+                        line20Entries.add(new Entry(guideDay - 1 + line20Entries.size(), (long) tradePrice / guideDay));
                         break;
                     case 60:
-                        line60Entries.add(new Entry(guideDay -1 + line60Entries.size(), (long)tradePrice / guideDay));
+                        line60Entries.add(new Entry(guideDay - 1 + line60Entries.size(), (long) tradePrice / guideDay));
                         break;
                 }
             }
         }
     }
 
-    private void setRealTimeLineData(List<CandleEntry> array, int guideDay,boolean isNow) {
+    private void setRealTimeLineData(List<CandleEntry> array, int guideDay, boolean isNow) {
         float tradePrice = 0f;
         for (int i = 0; i < guideDay; i++) {
             if ((array.size() - 1 - i) >= 0) {
@@ -191,21 +261,20 @@ public class MainActivity extends AppCompatActivity {
                 tradePrice += data.getClose();
             }
         }
-        if (!isNow){
-          //  Log.d("test1234",tradePrice / guideDay+".");
+        if (!isNow) {
             switch (guideDay) {
                 case 5:
 
-                    line5Entries.add(new Entry(guideDay-1  + line5Entries.size(), tradePrice / guideDay));
+                    line5Entries.add(new Entry(guideDay - 1 + line5Entries.size(), tradePrice / guideDay));
                     break;
                 case 10:
-                    line10Entries.add(new Entry(guideDay -1 + line10Entries.size(), tradePrice / guideDay));
+                    line10Entries.add(new Entry(guideDay - 1 + line10Entries.size(), tradePrice / guideDay));
                     break;
                 case 20:
-                    line20Entries.add(new Entry(guideDay -1 + line20Entries.size(), tradePrice / guideDay));
+                    line20Entries.add(new Entry(guideDay - 1 + line20Entries.size(), tradePrice / guideDay));
                     break;
                 case 60:
-                    line60Entries.add(new Entry(guideDay -1+ line60Entries.size(), tradePrice / guideDay));
+                    line60Entries.add(new Entry(guideDay - 1 + line60Entries.size(), tradePrice / guideDay));
                     break;
             }
         } else {
@@ -213,16 +282,16 @@ public class MainActivity extends AppCompatActivity {
             switch (guideDay) {
                 case 5:
                     //Log.d("test1235",tradePrice / guideDay+".");
-                    line5Entries.get(line5Entries.size()-1).setY(tradePrice/guideDay);
+                    line5Entries.get(line5Entries.size() - 1).setY(tradePrice / guideDay);
                     break;
                 case 10:
-                    line10Entries.get(line10Entries.size()-1).setY(tradePrice/guideDay);
+                    line10Entries.get(line10Entries.size() - 1).setY(tradePrice / guideDay);
                     break;
                 case 20:
-                    line20Entries.get(line20Entries.size()-1).setY(tradePrice/guideDay);
+                    line20Entries.get(line20Entries.size() - 1).setY(tradePrice / guideDay);
                     break;
                 case 60:
-                    line60Entries.get(line60Entries.size()-1).setY(tradePrice/guideDay);
+                    line60Entries.get(line60Entries.size() - 1).setY(tradePrice / guideDay);
                     break;
             }
         }
@@ -238,15 +307,14 @@ public class MainActivity extends AppCompatActivity {
             hour = "00";
             String time = hour + ":" + date.split(" ")[1].split(":")[0] + ":" + date.split(" ")[1].split(":")[2];
             date = date.split(" ")[0] + " " + time;
-            Log.d("aaaa", date);
-            Log.d("aaaa", time);
         }
         getCandelFirst = SetRetrofit.setRefrofit().get1MinuteCandle(code, 200, date);
         getCandelFirst.enqueue(new Callback<List<DataModel>>() {
             @Override
             public void onResponse(Call<List<DataModel>> call, Response<List<DataModel>> response) {
                 if (response.isSuccessful()) {
-                   drawFirstData(response.body());
+                    drawFirstData(response.body());
+
                 }
             }
 
@@ -257,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void drawFirstData(List<DataModel> dataModels){
+    private void drawFirstData(List<DataModel> dataModels) {
         for (int i = 0; i < dataModels.size(); i++) {
             DataModel data = dataModels.get(dataModels.size() - 1 - i);
             float openingPrice = data.getOpeningPrice();
@@ -270,11 +338,12 @@ public class MainActivity extends AppCompatActivity {
         setLineData(candleEntries, 5);
         setLineData(candleEntries, 10);
         setLineData(candleEntries, 20);
-       setLineData(candleEntries, 60);
+        setLineData(candleEntries, 60);
+        setRsiData(candleEntries, 20);
         getData();
     }
 
-    private void drawRealTime(List<DataModel> dataModels){
+    private void drawRealTime(List<DataModel> dataModels) {
         for (DataModel dataModel : dataModels) {
             float openingPrice = (float) dataModel.getOpeningPrice();
             float tradePrice = (float) dataModel.getTradePrice();
@@ -282,20 +351,20 @@ public class MainActivity extends AppCompatActivity {
             float highPrice = (float) dataModel.getHighPrice();
             if (candleEntries.get(candleEntries.size() - 1).getOpen() != openingPrice) {
                 candleEntries.add(new CandleEntry(candleEntries.size(), highPrice, lowPrice, openingPrice, tradePrice));
-                setRealTimeLineData(candleEntries, 5,false);
-                setRealTimeLineData(candleEntries, 10,false);
-                setRealTimeLineData(candleEntries, 20,false);
-                setRealTimeLineData(candleEntries, 60,false);
+                setRealTimeLineData(candleEntries, 5, false);
+                setRealTimeLineData(candleEntries, 10, false);
+                setRealTimeLineData(candleEntries, 20, false);
+                setRealTimeLineData(candleEntries, 60, false);
             } else {
                 int lastIndex = candleEntries.size() - 1;
                 candleEntries.get(lastIndex).setHigh(highPrice);
                 candleEntries.get(lastIndex).setClose(tradePrice);
                 candleEntries.get(lastIndex).setLow(lowPrice);
                 candleEntries.get(lastIndex).setOpen(openingPrice);
-                setRealTimeLineData(candleEntries, 5,true);
-                setRealTimeLineData(candleEntries, 10,true);
-                setRealTimeLineData(candleEntries, 20,true);
-                setRealTimeLineData(candleEntries, 60,true);
+                setRealTimeLineData(candleEntries, 5, true);
+                setRealTimeLineData(candleEntries, 10, true);
+                setRealTimeLineData(candleEntries, 20, true);
+                setRealTimeLineData(candleEntries, 60, true);
             }
             candleData.notifyDataChanged();
             dataSet.notifyDataSetChanged();
