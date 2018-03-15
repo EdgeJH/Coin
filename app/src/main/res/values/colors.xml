@@ -3,7 +3,20 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#222335</color>
     <color name="colorAccent">#FF4081</color>
-    <color name="increase">#FF4081</color>
+
+    <color name="increase">#a1e9e5</color>
+    <color name="decrease">#c2899d</color>
+    <color name="line5">#ff454f</color>
+    <color name="line10">#abff75</color>
+    <color name="line20">#6fb4ff</color>
+    <color name="line60">#fae64d</color>
+    <color name="envelope">#ff9a4d</color>
     <color name="navy">#222335</color>
     <color name="dark_navy">#1a1a28</color>
+    <color name="white">#ffffff</color>
+    <color name="white75">#75ffffff</color>
+    <color name="shadow_red">#C47687</color>
+    <color name="light_red">#fff5f7</color>
+    <color name="vol_up">#6073d46e</color>
+    <color name="vol_down">#60d46e71</color>
 </resources>

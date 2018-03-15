@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="coin_name">
+        <item>비트코인</item>
+        <item>이더리움</item>
+        <item>리플</item>
+        <item>라이트코인</item>
+        <item>퀀텀</item>
+        <item>에이다</item>
+        <item>네오</item>
+        <item>비트코인캐시</item>
+        <item>비트코인골드</item>
+        <item>스테이터스네크워크토큰</item>
+        <item>뉴이코노미무브먼트</item>
+        <item>이더리움 클래식</item>
+        <item>스텔라루멘</item>
+        <item>오미세고</item>
+        <item>스팀달러</item>
+        <item>스팀</item>
+        <item>블록틱스</item>
+        <item>스토리지</item>
+        <item>아더</item>
+        <item>모네로</item>
+        <item>리스크</item>
+        <item>스트라티스</item>
+        <item>파워렛져</item>
+        <item>아인스타이늄</item>
+        <item>머큐리</item>
+        <item>대시</item>
+        <item>메탈</item>
+        <item>코모도</item>
+        <item>피벡스</item>
+        <item>제트캐시</item>
+        <item>웨이브</item>
+        <item>버트코인</item>
+        <item>어거</item>
+        <item>아크</item>
+        <item>그로스톨코인</item>
+
+    </string-array>
+    <string-array name="coin_code">
+        <item>KRW-BTC</item>
+        <item>KRW-ETH</item>
+        <item>KRW-XRP</item>
+        <item>KRW-LTC</item>
+        <item>KRW-QTUM</item>
+        <item>KRW-ADA</item>
+        <item>KRW-NEO</item>
+        <item>KRW-BCC</item>
+        <item>KRW-BCG</item>
+        <item>KRW-SNT</item>
+        <item>KRW-XEM</item>
+        <item>KRW-ETC</item>
+        <item>KRW-XLM</item>
+        <item>KRW-OMG</item>
+        <item>KRW-SBD</item>
+        <item>KRW-STEEM</item>
+        <item>KRW-TIX</item>
+        <item>KRW-STORJ</item>
+        <item>KRW-ARDR</item>
+        <item>KRW-XMR</item>
+        <item>KRW-LSK</item>
+        <item>KRW-STRAT</item>
+        <item>KRW-POWR</item>
+        <item>KRW-EMC2</item>
+        <item>KRW-MER</item>
+        <item>KRW-DASH</item>
+        <item>KRW-MTL</item>
+        <item>KRW-KMD</item>
+        <item>KRW-PIVX</item>
+        <item>KRW-ZEC</item>
+        <item>KRW-WAVES</item>
+        <item>KRW-VTC</item>
+        <item>KRW-REP</item>
+        <item>KRW-ARK</item>
+        <item>KRW-GRS</item>
+    </string-array>
+</resources>
