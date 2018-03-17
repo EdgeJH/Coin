@@ -3,15 +3,19 @@ package com.edge.coin.Utils;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationChannelGroup;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.annotation.StringDef;
+import android.support.v4.content.ContextCompat;
 
+import com.edge.coin.MainPackage.MainActivity;
 import com.edge.coin.R;
 
 import java.lang.annotation.Retention;
@@ -91,24 +95,43 @@ public class NotificationManager {
         getManager(context).notify(id, builder.build());
     }
     public static void startForgroundNoti(Service service, int id, @Channel String channel, String title, String body) {
-
+        Intent intent = new Intent(service, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(service, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder builder = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             builder = new Notification.Builder(service, channel)
                     .setContentTitle(title)
                     .setContentText(body)
+                    .setColor(ContextCompat.getColor(service,R.color.line20))
                     .setWhen(System.currentTimeMillis())
                     .setSmallIcon(getSmallIcon())
+                    .setShowWhen(true)
+                    .setContentIntent(pendingIntent)
                     .setAutoCancel(true);
         } else {
             Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            builder = new Notification.Builder(service)
-                    .setContentTitle(title)
-                    .setContentText(body)
-                    .setSound(alarmSound)
-                    .setWhen(System.currentTimeMillis())
-                    .setSmallIcon(getSmallIcon())
-                    .setAutoCancel(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                builder = new Notification.Builder(service)
+                        .setContentTitle(title)
+                        .setContentText(body)
+                        .setSound(alarmSound)
+                        .setColor(ContextCompat.getColor(service,R.color.line20))
+                        .setWhen(System.currentTimeMillis())
+                        .setShowWhen(true)
+                        .setSmallIcon(getSmallIcon())
+                        .setContentIntent(pendingIntent)
+                        .setAutoCancel(true);
+            } else {
+                builder = new Notification.Builder(service)
+                        .setContentTitle(title)
+                        .setContentText(body)
+                        .setSound(alarmSound)
+                        .setShowWhen(true)
+                        .setWhen(System.currentTimeMillis())
+                        .setSmallIcon(getSmallIcon())
+                        .setContentIntent(pendingIntent)
+                        .setAutoCancel(true);
+            }
         }
         service.startForeground(id,builder.build());
 
@@ -117,7 +140,7 @@ public class NotificationManager {
 
 
     private static int getSmallIcon() {
-        return android.R.drawable.stat_notify_chat;
+        return R.drawable.ic_noti;
     }
 
     @Retention(RetentionPolicy.SOURCE)

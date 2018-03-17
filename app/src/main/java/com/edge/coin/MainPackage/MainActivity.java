@@ -1,27 +1,26 @@
 package com.edge.coin.MainPackage;
 
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.edge.coin.R;
-import com.edge.coin.ServicePackage.DataService;
+import com.edge.coin.RadarActivity;
 import com.edge.coin.Utils.Candle;
 import com.edge.coin.Utils.CoupleChartGestureListener;
 import com.edge.coin.Utils.LoadingProgress;
 import com.edge.coin.Utils.NotificationManager;
+import com.edge.coin.Utils.SharedPreference;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.charts.LineChart;
@@ -47,7 +46,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements MainTask.View {
+public class MainActivity extends AppCompatActivity implements MainTask.View, View.OnClickListener {
+
     ArrayList<CandleEntry> candleEntries = new ArrayList<>();
     ArrayList<Entry> line5Entries = new ArrayList<>();
     ArrayList<Entry> line10Entries = new ArrayList<>();
@@ -84,21 +84,28 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
     List<String> coinCode;
     NiceSpinner spinner;
     boolean isChanged = false;
-    Handler handler =new Handler();
+    Handler handler = new Handler();
     TabLayout tabLayout;
-    int time=1;
-    DataService dataService;
-    boolean isBind;
-    double upAvg=0;
-    double downAvg=0;
+    int time = 1;
+    double upAvg = 0;
+    double downAvg = 0;
     MainPresenter presenter;
     MainTask.PresenterBridge presenterBridge;
-    YAxis leftAxis;
+    YAxis rsiLeftAxis, rsiRightAxis, leftAxis, rightAxis;
+    Legend combineLegend, rsiLegend;
+    XAxis xAxis, rsiXAxis;
+    SharedPreference sharedPreference = new SharedPreference();
+    boolean isDarkTheme = false;
+    ImageView themeIcon;
+    RelativeLayout changeTheme;
+    RelativeLayout radar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        isDarkTheme = sharedPreference.getValue(this, "theme", false);
+        setTheme();
         setContentView(R.layout.activity_main);
-        bindService(new Intent(this,DataService.class),sconn,BIND_AUTO_CREATE);
         presenter = new MainPresenter(this);
         initView();
         setCombinedChart();
@@ -107,55 +114,61 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
         code = defaultCode + coinCode.get(0);
         setTabLayout();
     }
-    ServiceConnection sconn = new ServiceConnection() {
-        @Override //서비스가 실행될 때 호출
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            DataService.DataBinder myBinder = (DataService.DataBinder) service;
-            dataService = myBinder.getService();
 
-            isBind = true;
-            Log.d("LOG123123", "onServiceConnected() "+dataService.getA());
+    private void setTheme() {
+        if (!isDarkTheme) {
+            setTheme(R.style.WhiteTheme);
+        } else {
+            setTheme(R.style.DarkTheme);
         }
+    }
 
-        @Override //서비스가 종료될 때 호출
-        public void onServiceDisconnected(ComponentName name) {
-            dataService = null;
-            isBind = false;
-            Log.d("LOG123123", "onServiceDisconnected()");
-        }
-    };
+
     private void initView() {
         currentPrice = findViewById(R.id.price);
         combinedChart = findViewById(R.id.candle);
         spinner = findViewById(R.id.spinner);
         rsiChart = findViewById(R.id.rsi);
         tabLayout = findViewById(R.id.tab_layout);
-
+        changeTheme = findViewById(R.id.change_theme);
+        themeIcon = findViewById(R.id.theme_icon);
+        radar = findViewById(R.id.radar);
+        changeThemeIcon();
+        radar.setOnClickListener(this);
+        changeTheme.setOnClickListener(this);
     }
 
-    private void setTabLayout(){
+    private void changeThemeIcon() {
+        if (isDarkTheme) {
+            themeIcon.setImageResource(R.drawable.sun);
+        } else {
+            themeIcon.setImageResource(R.drawable.moon);
+        }
+    }
+
+    private void setTabLayout() {
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 LoadingProgress.showDialog(MainActivity.this, true);
-                switch (tab.getPosition()){
+                switch (tab.getPosition()) {
                     case 0:
-                        time =1;
+                        time = 1;
                         break;
                     case 1:
-                        time =5;
+                        time = 5;
                         break;
                     case 2:
-                        time =15;
+                        time = 15;
                         break;
                     case 3:
-                        time =30;
+                        time = 30;
                         break;
                     case 4:
                         time = 60;
                         break;
                     case 5:
-                        time=240;
+                        time = 240;
 
                 }
                 getData();
@@ -188,100 +201,107 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
         });
     }
 
-    private void getData(){
+    private void getData() {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                presenterBridge.startFirstData(time,code);
+                presenterBridge.startFirstData(time, code);
             }
-        },1000);
+        }, 1000);
     }
-
 
 
     private void setRsiChart() {
         rsiChart.getDescription().setEnabled(false);
-        Legend legend = rsiChart.getLegend();
-        legend.setEnabled(true);
-        legend.setDrawInside(true);
-        legend.setTextColor(Color.LTGRAY);
-        legend.setOrientation(Legend.LegendOrientation.VERTICAL);
-        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
-        XAxis rsiXAxis = rsiChart.getXAxis();
-        rsiXAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        rsiXAxis.setDrawGridLines(true);
-        rsiXAxis.setAxisMinimum(0f);
-        rsiXAxis.setTextColor(Color.LTGRAY);
-        rsiXAxis.setAxisLineColor(Color.LTGRAY);
-        rsiXAxis.setSpaceMax(50f);
-
-        YAxis rsiLeftAxis = rsiChart.getAxisLeft();
+        rsiLegend = rsiChart.getLegend();
+        setLegend(rsiLegend);
+        rsiXAxis = rsiChart.getXAxis();
+        setXAxis(rsiXAxis);
+        rsiLeftAxis = rsiChart.getAxisLeft();
         rsiLeftAxis.setEnabled(false);
-        YAxis rsiRightAxis = rsiChart.getAxisRight();
-        rsiRightAxis.setEnabled(true);
-        rsiRightAxis.setPosition(YAxis.YAxisLabelPosition.INSIDE_CHART);
-        rsiRightAxis.setDrawGridLines(true);
-        rsiRightAxis.setTextColor(Color.LTGRAY);
-        rsiRightAxis.setAxisLineColor(Color.LTGRAY);
-        rsiRightAxis.setLabelCount(5);
-        rsiRightAxis.setMaxWidth(60f);
-        rsiRightAxis.setMinWidth(60f);
-        rsiRightAxis.setAxisMaximum(100f);
-        rsiRightAxis.setAxisMinimum(0f);
-        rsiRightAxis.setLabelCount(5,true);
-        rsiRightAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
-
-
+        rsiRightAxis = rsiChart.getAxisRight();
+        setYAixs(rsiRightAxis);
         rsiRightAxis.addLimitLine(new LimitLine(30, ""));
         rsiRightAxis.addLimitLine(new LimitLine(70, ""));
     }
 
     private void setCombinedChart() {
         combinedChart.getDescription().setEnabled(false);
-        Legend legend = combinedChart.getLegend();
-        LegendEntry legendEntry = new LegendEntry("5일선", Legend.LegendForm.LINE,10f,2f,null,ContextCompat.getColor(this, R.color.line5));
-        LegendEntry legendEntry2 = new LegendEntry("10일선", Legend.LegendForm.LINE,10f,2f,null,ContextCompat.getColor(this, R.color.line10));
-        LegendEntry legendEntry3 = new LegendEntry("20일선", Legend.LegendForm.LINE,10f,2f,null,ContextCompat.getColor(this, R.color.line20));
-        LegendEntry legendEntry4 = new LegendEntry("60일선", Legend.LegendForm.LINE,10f,2f,null,ContextCompat.getColor(this, R.color.line60));
-        LegendEntry[] entries = {legendEntry,legendEntry2,legendEntry3,legendEntry4};
-        legend.setCustom(entries);
-        legend.setEnabled(true);
-        legend.setDrawInside(true);
-        legend.setTextColor(Color.LTGRAY);
-        legend.setOrientation(Legend.LegendOrientation.VERTICAL);
-        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
+        combineLegend = combinedChart.getLegend();
+        LegendEntry legendEntry = new LegendEntry("5일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(this, R.color.line5));
+        LegendEntry legendEntry2 = new LegendEntry("10일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(this, R.color.line10));
+        LegendEntry legendEntry3 = new LegendEntry("20일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(this, R.color.line20));
+        LegendEntry legendEntry4 = new LegendEntry("60일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(this, R.color.line60));
+        LegendEntry[] entries = {legendEntry, legendEntry2, legendEntry3, legendEntry4};
+        combineLegend.setCustom(entries);
+        setLegend(combineLegend);
         combinedChart.setDrawOrder(new CombinedChart.DrawOrder[]{CombinedChart.DrawOrder.CANDLE, CombinedChart.DrawOrder.LINE, CombinedChart.DrawOrder.BAR});
-        XAxis xAxis = combinedChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setDrawGridLines(true);
-        xAxis.setTextColor(Color.LTGRAY);
-        xAxis.setAxisLineColor(Color.LTGRAY);
-        xAxis.setSpaceMax(50f);
-
+        xAxis = combinedChart.getXAxis();
+        setXAxis(xAxis);
 
         leftAxis = combinedChart.getAxisLeft();
         leftAxis.setEnabled(true);
         leftAxis.setDrawLabels(false);
         leftAxis.setDrawLimitLinesBehindData(true);
-       leftAxis.setSpaceBottom(0f);
-       leftAxis.setInverted(false);
-        YAxis rightAxis = combinedChart.getAxisRight();
-        rightAxis.setEnabled(true);
-        rightAxis.setDrawGridLines(true);
-        rightAxis.setTextColor(Color.LTGRAY);
-        rightAxis.setAxisLineColor(Color.LTGRAY);
-        rightAxis.setLabelCount(5);
-        rightAxis.setMaxWidth(60f);
-        rightAxis.setMinWidth(60f);
-        rightAxis.setSpaceBottom(0f);
-        rightAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        leftAxis.setSpaceBottom(0f);
+        leftAxis.setInverted(false);
+        rightAxis = combinedChart.getAxisRight();
+        setYAixs(rightAxis);
 
         combinedChart.setOnChartGestureListener(new CoupleChartGestureListener(combinedChart, new Chart[]{rsiChart}));
         rsiChart.setOnChartGestureListener(new CoupleChartGestureListener(rsiChart, new Chart[]{combinedChart}));
 
+    }
 
+    private void setXAxis(XAxis xAxis) {
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(true);
+        xAxis.setSpaceMax(50f);
+    }
+
+    private void setLegend(Legend legend) {
+        legend.setEnabled(true);
+        legend.setDrawInside(true);
+        legend.setOrientation(Legend.LegendOrientation.VERTICAL);
+        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
+        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
+    }
+
+    private void setYAixs(YAxis yAixs) {
+        yAixs.setEnabled(true);
+        yAixs.setLabelCount(5);
+        yAixs.setDrawGridLines(false);
+        yAixs.setMaxWidth(60f);
+        yAixs.setMinWidth(60f);
+        yAixs.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+    }
+
+    private void setChartTheme() {
+        if (isDarkTheme) {
+            rightAxis.setTextColor(Color.LTGRAY);
+            rightAxis.setAxisLineColor(Color.LTGRAY);
+            rsiRightAxis.setTextColor(Color.LTGRAY);
+            combineLegend.setTextColor(Color.LTGRAY);
+            rsiLegend.setTextColor(Color.LTGRAY);
+            rsiXAxis.setTextColor(Color.LTGRAY);
+            rsiXAxis.setAxisLineColor(Color.TRANSPARENT);
+            xAxis.setTextColor(Color.LTGRAY);
+            xAxis.setAxisLineColor(Color.TRANSPARENT);
+            dataSet.setIncreasingColor(ContextCompat.getColor(this, R.color.increase_dark));
+            dataSet.setDecreasingColor(ContextCompat.getColor(this, R.color.decrease_dark));
+        } else {
+            rightAxis.setTextColor(Color.GRAY);
+            rightAxis.setAxisLineColor(Color.GRAY);
+            rsiRightAxis.setTextColor(Color.GRAY);
+            combineLegend.setTextColor(Color.GRAY);
+            rsiLegend.setTextColor(Color.GRAY);
+            rsiXAxis.setTextColor(Color.GRAY);
+            rsiXAxis.setAxisLineColor(Color.WHITE);
+            xAxis.setTextColor(Color.GRAY);
+            xAxis.setAxisLineColor(Color.WHITE);
+            dataSet.setIncreasingColor(ContextCompat.getColor(this, R.color.increase_light));
+            dataSet.setDecreasingColor(ContextCompat.getColor(this, R.color.decrease_light));
+        }
     }
 
     private void setCombinedChartData() {
@@ -290,15 +310,13 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
         dataSet.setAxisDependency(YAxis.AxisDependency.RIGHT);
         dataSet.setBarSpace(0.2f);
         dataSet.setShadowWidth(0.7f);
-        dataSet.setShadowColorSameAsCandle(true);;
-        dataSet.setDecreasingColor(ContextCompat.getColor(this, R.color.decrease));
+        dataSet.setShadowColorSameAsCandle(true);
         dataSet.setDecreasingPaintStyle(Paint.Style.FILL);
-        dataSet.setIncreasingColor(ContextCompat.getColor(this, R.color.increase));
         dataSet.setIncreasingPaintStyle(Paint.Style.FILL);
         dataSet.setNeutralColor(Color.DKGRAY);
         dataSet.setDrawValues(false);
 
-        barDataSet = new BarDataSet(barEntries,"거래량");
+        barDataSet = new BarDataSet(barEntries, "거래량");
         barDataSet.setColors(barColor);
         barDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
 
@@ -324,6 +342,7 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
         combinedData.setData(lineData);
         combinedChart.setData(combinedData);
         combinedChart.zoom(2f, 1f, 160, candleEntries.get(199).getClose(), YAxis.AxisDependency.RIGHT);
+        setChartTheme();
         combinedChart.invalidate();
 
 
@@ -355,7 +374,7 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
         for (int i = 0; i < array.size(); i++) {
             if (i >= (int) guideDay) {
                 CandleEntry data;
-                if (i==guideDay){
+                if (i == guideDay) {
                     for (int j = 0; j < guideDay; j++) {
                         if ((i - j) > 0) {
                             data = array.get(i - j);
@@ -366,24 +385,24 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
                             }
                         }
                     }
-                     upAvg = upPrice / guideDay;
-                     downAvg = downPrice / guideDay;
+                    upAvg = upPrice / guideDay;
+                    downAvg = downPrice / guideDay;
                     double rs = upAvg / downAvg;
                     float rsi = (float) (100 - (100 / (1 + rs)));
-                    rsiEndtries.add(new Entry(guideDay-1  + rsiEndtries.size(), rsi));
+                    rsiEndtries.add(new Entry(guideDay - 1 + rsiEndtries.size(), rsi));
                 } else {
-                    data =array.get(i);
-                    if (data.getOpen()>data.getClose()){
-                        upAvg =(upAvg*13)/14;
-                        downAvg =((downAvg*13)+data.getBodyRange())/14;
+                    data = array.get(i);
+                    if (data.getOpen() > data.getClose()) {
+                        upAvg = (upAvg * 13) / 14;
+                        downAvg = ((downAvg * 13) + data.getBodyRange()) / 14;
                     } else {
-                        upAvg =((upAvg*13)+data.getBodyRange())/14;
-                        downAvg =(downAvg*13)/14;
+                        upAvg = ((upAvg * 13) + data.getBodyRange()) / 14;
+                        downAvg = (downAvg * 13) / 14;
                     }
-                //    Log.d("test1223","up avg = "+upAvg);
+                    //    Log.d("test1223","up avg = "+upAvg);
                     double rs = upAvg / downAvg;
                     float rsi = (float) (100 - (100 / (1 + rs)));
-                    rsiEndtries.add(new Entry(guideDay-1  + rsiEndtries.size(), rsi));
+                    rsiEndtries.add(new Entry(guideDay - 1 + rsiEndtries.size(), rsi));
                 }
             }
         }
@@ -393,12 +412,12 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
     private void setRsiRealTimeData(CandleEntry data, float guideDay, boolean isNow) {
 
         if (!isNow) {
-            if (data.getOpen()>data.getClose()){
-                upAvg =(upAvg*13)/14;
-                downAvg =((downAvg*13)+data.getBodyRange())/14;
+            if (data.getOpen() > data.getClose()) {
+                upAvg = (upAvg * 13) / 14;
+                downAvg = ((downAvg * 13) + data.getBodyRange()) / 14;
             } else {
-                upAvg =((upAvg*13)+data.getBodyRange())/14;
-                downAvg =(downAvg*13)/14;
+                upAvg = ((upAvg * 13) + data.getBodyRange()) / 14;
+                downAvg = (downAvg * 13) / 14;
             }
             //    Log.d("test1223","up avg = "+upAvg);
             double rs = upAvg / downAvg;
@@ -408,12 +427,12 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
         } else {
             double up;
             double down;
-            if (data.getOpen()>data.getClose()){
-                up =(upAvg*13)/14;
-                down =((downAvg*13)+data.getBodyRange())/14;
+            if (data.getOpen() > data.getClose()) {
+                up = (upAvg * 13) / 14;
+                down = ((downAvg * 13) + data.getBodyRange()) / 14;
             } else {
-                up =((upAvg*13)+data.getBodyRange())/14;
-                down =(downAvg*13)/14;
+                up = ((upAvg * 13) + data.getBodyRange()) / 14;
+                down = (downAvg * 13) / 14;
             }
             //    Log.d("test1223","up avg = "+upAvg);
             double rs = up / down;
@@ -423,47 +442,48 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
             rsiEndtries.get(rsiEndtries.size() - 1).setY(rsi);
         }
     }
-    private void setBarData(List<Candle> array){
-        float maxvol =0;
-        for (Candle candle :array){
-            double volume =candle.getCandleAccTradeVolume();
+
+    private void setBarData(List<Candle> array) {
+        float maxvol = 0;
+        for (Candle candle : array) {
+            double volume = candle.getCandleAccTradeVolume();
             float volumeFloat = (float) volume;
-            barEntries.add(new BarEntry(barEntries.size(),volumeFloat));
-            if (maxvol ==0f){
+            barEntries.add(new BarEntry(barEntries.size(), volumeFloat));
+            if (maxvol == 0f) {
                 maxvol = volumeFloat;
             } else {
-                if (volumeFloat>maxvol){
+                if (volumeFloat > maxvol) {
                     maxvol = volumeFloat;
                 }
             }
-            if (candle.getOpeningPrice()<candle.getTradePrice()){
-                barColor.add(ContextCompat.getColor(this,R.color.vol_up));
+            if (candle.getOpeningPrice() < candle.getTradePrice()) {
+                barColor.add(ContextCompat.getColor(this, R.color.vol_up));
             } else {
-                barColor.add(ContextCompat.getColor(this,R.color.vol_down));
+                barColor.add(ContextCompat.getColor(this, R.color.vol_down));
             }
         }
-        leftAxis.setAxisMaximum(maxvol*3.2f);
+        leftAxis.setAxisMaximum(maxvol * 3.2f);
     }
 
-    private void setRealTimeBar(Candle candle,boolean isNow){
-        double volume =candle.getCandleAccTradeVolume();
+    private void setRealTimeBar(Candle candle, boolean isNow) {
+        double volume = candle.getCandleAccTradeVolume();
         float volumeFloat = (float) volume;
-      if (!isNow){
-          barEntries.add(new BarEntry(barEntries.size(),volumeFloat));
-          if (candle.getOpeningPrice()<candle.getTradePrice()){
-              barColor.add(ContextCompat.getColor(this,R.color.vol_up));
-          } else {
-              barColor.add(ContextCompat.getColor(this,R.color.vol_down));
-          }
-      } else {
-          barEntries.get(barEntries.size()-1).setY(volumeFloat);
-          if (candle.getOpeningPrice()<candle.getTradePrice()){
-              barColor.set(barEntries.size()-1, ContextCompat.getColor(this,R.color.vol_up));
-          } else {
-              barColor.set(barEntries.size()-1, ContextCompat.getColor(this,R.color.vol_down));
-          }
+        if (!isNow) {
+            barEntries.add(new BarEntry(barEntries.size(), volumeFloat));
+            if (candle.getOpeningPrice() < candle.getTradePrice()) {
+                barColor.add(ContextCompat.getColor(this, R.color.vol_up));
+            } else {
+                barColor.add(ContextCompat.getColor(this, R.color.vol_down));
+            }
+        } else {
+            barEntries.get(barEntries.size() - 1).setY(volumeFloat);
+            if (candle.getOpeningPrice() < candle.getTradePrice()) {
+                barColor.set(barEntries.size() - 1, ContextCompat.getColor(this, R.color.vol_up));
+            } else {
+                barColor.set(barEntries.size() - 1, ContextCompat.getColor(this, R.color.vol_down));
+            }
 
-      }
+        }
     }
 
     private void setLineData(ArrayList<CandleEntry> array, float guideDay) {
@@ -521,11 +541,11 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
                     break;
             }
             if (line5Entries.get(line5Entries.size() - 1).getY() > line10Entries.get(line10Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line10Entries.get(line10Entries.size() - 2).getY()) {
-                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex())+"매수신호", "5일 10일선 골크 / 현재가격 : "+(long)(array.get(array.size()-1).getClose()));
+                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex()) + "매수신호", "5일 10일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
             } else if (line5Entries.get(line5Entries.size() - 1).getY() > line20Entries.get(line20Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line20Entries.get(line20Entries.size() - 2).getY()) {
-                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex())+"매수신호", "5일 20일선 골크 / 현재가격 : "+(long)(array.get(array.size()-1).getClose()));
+                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex()) + "매수신호", "5일 20일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
             } else if (line5Entries.get(line5Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
-                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex())+"매수신호", "5일 60일선 골크 / 현재가격 : "+(long)(array.get(array.size()-1).getClose()));
+                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex()) + "매수신호", "5일 60일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
             }
         } else {
 
@@ -570,7 +590,7 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
             setCombinedChartData();
         }
         LoadingProgress.dismissDialog();
-        presenterBridge.startRealTimeData(1,code);
+        presenterBridge.startRealTimeData(1, code);
     }
 
     private void drawRealTime(List<Candle> candles) {
@@ -586,7 +606,7 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
                 setRealTimeLineData(candleEntries, 10, false);
                 setRealTimeLineData(candleEntries, 20, false);
                 setRealTimeLineData(candleEntries, 60, false);
-                setRealTimeBar(candle,false);
+                setRealTimeBar(candle, false);
                 setRsiRealTimeData(new CandleEntry(candleEntries.size(), highPrice, lowPrice, openingPrice, tradePrice), 14, false);
             } else {
                 int lastIndex = candleEntries.size() - 1;
@@ -598,7 +618,7 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
                 setRealTimeLineData(candleEntries, 10, true);
                 setRealTimeLineData(candleEntries, 20, true);
                 setRealTimeLineData(candleEntries, 60, true);
-                setRealTimeBar(candle,true);
+                setRealTimeBar(candle, true);
                 setRsiRealTimeData(candleEntries.get(lastIndex), 14, true);
             }
             setNotify();
@@ -626,6 +646,7 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
         rsiChart.notifyDataSetChanged();
         rsiChart.invalidate();
     }
+
     private void allDataClear() {
         candleEntries.clear();
         barEntries.clear();
@@ -641,13 +662,13 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
     @Override
     protected void onResume() {
         super.onResume();
-        presenterBridge.startFirstData(time,code);
+        presenterBridge.startFirstData(time, code);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unbindService(sconn);
+
     }
 
     @Override
@@ -671,5 +692,27 @@ public class MainActivity extends AppCompatActivity implements MainTask.View {
     @Override
     public void getRealTimeResult(List<Candle> candleEntries) {
         drawRealTime(candleEntries);
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.change_theme:
+                if (isDarkTheme) {
+                    isDarkTheme = false;
+                } else {
+                    isDarkTheme = true;
+                }
+                setTheme();
+                sharedPreference.put(this, "theme", isDarkTheme);
+                changeThemeIcon();
+                setChartTheme();
+                finish();
+                startActivity(new Intent(this, MainActivity.class));
+                break;
+            case R.id.radar:
+                startActivity(new Intent(this, RadarActivity.class));
+                break;
+        }
     }
 }

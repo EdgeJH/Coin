@@ -1,5 +1,6 @@
 package com.edge.coin.UpbitPackage;
 
+import android.os.Handler;
 import android.util.Log;
 
 import com.edge.coin.Utils.Candle;
@@ -73,6 +74,60 @@ public class UpbitData {
             }
         };
         timer.schedule(timerTask, 0, 2000);
+    }
+    public void getServiceFirstData(final int time, final String code) {
+
+        getCandelFirst = SetRetrofit.setRefrofit().get1MinuteCandle(time,code, 200, System.currentTimeMillis());
+        getCandelFirst.enqueue(new Callback<List<Candle>>() {
+            @Override
+            public void onResponse(Call<List<Candle>> call, Response<List<Candle>> response) {
+                if (response.isSuccessful()) {
+                    upbitCallback.getFirstResult(response.body());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Candle>> call, Throwable t) {
+                Log.d("test1234", t.getMessage());
+            }
+        });
+    }
+
+    public void getServiceRealTimeData(final int time,final String code) {
+
+        if (timer != null) {
+            timer.cancel();
+        }
+        timer = new Timer();
+
+        timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                long currentTime = System.currentTimeMillis();
+                getCandleRealTime = SetRetrofit.setRefrofit().get1MinuteCandle(time,code, 1, currentTime);
+                getCandleRealTime.enqueue(new Callback<List<Candle>>() {
+                    @Override
+                    public void onResponse(Call<List<Candle>> call, Response<List<Candle>> response) {
+                        if (response.isSuccessful()) {
+                            //Log.d("LOG123123", "onServiceDisconnected1111()");
+                            upbitCallback.getRealTimeResult(response.body());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<Candle>> call, Throwable t) {
+                        Handler handler =new Handler();
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                getServiceRealTimeData(time,code);
+                            }
+                        },30000);
+                    }
+                });
+            }
+        };
+        timer.schedule(timerTask, 0, 15000);
     }
     public void stopData(){
         if (timer!=null){

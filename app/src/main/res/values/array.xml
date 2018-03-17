@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string-array name="candle_time">
+        <item>1분봉</item>
+        <item>3분봉</item>
+        <item>5분봉</item>
+        <item>10분봉</item>
+        <item>15분봉</item>
+        <item>30분봉</item>
+        <item>60분봉</item>
+        <item>240분봉</item>
+    </string-array>
     <string-array name="coin_name">
         <item>비트코인</item>
         <item>이더리움</item>
