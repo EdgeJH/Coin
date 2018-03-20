@@ -19,7 +19,6 @@ import com.edge.coin.RadarActivity;
 import com.edge.coin.Utils.Candle;
 import com.edge.coin.Utils.CoupleChartGestureListener;
 import com.edge.coin.Utils.LoadingProgress;
-import com.edge.coin.Utils.NotificationManager;
 import com.edge.coin.Utils.SharedPreference;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.CombinedChart;
@@ -540,13 +539,7 @@ public class MainActivity extends AppCompatActivity implements MainTask.View, Vi
                     line60Entries.add(new Entry(guideDay + line60Entries.size(), tradePrice / guideDay));
                     break;
             }
-            if (line5Entries.get(line5Entries.size() - 1).getY() > line10Entries.get(line10Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line10Entries.get(line10Entries.size() - 2).getY()) {
-                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex()) + "매수신호", "5일 10일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
-            } else if (line5Entries.get(line5Entries.size() - 1).getY() > line20Entries.get(line20Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line20Entries.get(line20Entries.size() - 2).getY()) {
-                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex()) + "매수신호", "5일 20일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
-            } else if (line5Entries.get(line5Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
-                NotificationManager.sendNotification(MainActivity.this, 1, NotificationManager.Channel.MESSAGE, coinName.get(spinner.getSelectedIndex()) + "매수신호", "5일 60일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
-            }
+
         } else {
 
             switch (guideDay) {

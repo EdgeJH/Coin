@@ -13,6 +13,7 @@ import com.edge.coin.UpbitPackage.UpbitData;
 import com.edge.coin.Utils.Candle;
 import com.edge.coin.Utils.LoadingProgress;
 import com.edge.coin.Utils.NotificationManager;
+import com.edge.coin.Utils.SharedPreference;
 import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.CandleEntry;
 import com.github.mikephil.charting.data.Entry;
@@ -34,13 +35,14 @@ public class DataService extends Service implements UpbitCallback{
     ArrayList<Entry> envelopeMinusEntries = new ArrayList<>();
     ArrayList<Entry> rsiEndtries = new ArrayList<>();
     ArrayList<BarEntry> barEntries = new ArrayList<>();
-
+    SharedPreference sharedPreference = new SharedPreference();
 
     double upAvg,downAvg;
     String code;
-    List<String> coinName;
+    String coinName;
     UpbitData upbitData;
-
+    boolean isVol,isGold,isDead,isRsi;
+    int volPer,volCandle,rsiBt,rsiT;
     private IBinder dataBinder = new DataBinder();
     int time;
     public class DataBinder extends Binder {
@@ -54,18 +56,32 @@ public class DataService extends Service implements UpbitCallback{
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d("LOG123123","service bind");
+
         return dataBinder;
     }
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d("LOG123123","service startcommand ");
+
         if (intent!=null){
-            String coinName= intent.getStringExtra("coinName");
+            coinName= intent.getStringExtra("coinName");
             code = intent.getStringExtra("code");
             time = intent.getIntExtra("time",0);
+            Log.d("test123",code+",");
+            isVol = intent.getBooleanExtra("isVol",false);
+            isDead = intent.getBooleanExtra("isDead",false);
+            isGold = intent.getBooleanExtra("isGold",false);
+
+            if (isVol){
+                volPer = sharedPreference.getValue(this,"volPer",0);
+                volCandle = sharedPreference.getValue(this,"volCandle",0);
+            }
+
+            if (isRsi){
+                rsiBt = sharedPreference.getValue(this,"rsiBt",0);
+                rsiT = sharedPreference.getValue(this,"rsiTop",0);
+            }
             NotificationManager.startForgroundNoti(this,1010,NotificationManager.Channel.NOTICE,coinName+" 모니터링 중..",coinName+"의 시그널을 모니터링 하고 있습니다...");
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
@@ -80,7 +96,7 @@ public class DataService extends Service implements UpbitCallback{
 
     @Override
     public void onCreate() {
-        Log.d("LOG123123","service start create");
+
         upbitData =new UpbitData(this);
         super.onCreate();
     }
@@ -88,12 +104,12 @@ public class DataService extends Service implements UpbitCallback{
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d("LOG123123","service destroy");
+
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d("LOG123123","service unbind");
+
         return super.onUnbind(intent);
     }
 
@@ -168,6 +184,7 @@ public class DataService extends Service implements UpbitCallback{
                 rsiEndtries.remove(0);
             }
             rsiEndtries.add(new Entry(guideDay + rsiEndtries.size(), rsi));
+            rsiCheck(rsi);
         } else {
             double up;
             double down;
@@ -213,6 +230,9 @@ public class DataService extends Service implements UpbitCallback{
                 barEntries.remove(0);
             }
             barEntries.add(new BarEntry(barEntries.size(), volumeFloat));
+            if (isVol){
+                volCheck(volCandle);
+            }
         } else {
             barEntries.get(barEntries.size() - 1).setY(volumeFloat);
         }
@@ -277,12 +297,11 @@ public class DataService extends Service implements UpbitCallback{
                     line60Entries.add(new Entry(guideDay + line60Entries.size(), tradePrice / guideDay));
                     break;
             }
-            if (line5Entries.get(line5Entries.size() - 1).getY() > line10Entries.get(line10Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line10Entries.get(line10Entries.size() - 2).getY()) {
-                NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매수신호", "5일 10일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
-            } else if (line5Entries.get(line5Entries.size() - 1).getY() > line20Entries.get(line20Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line20Entries.get(line20Entries.size() - 2).getY()) {
-                NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매수신호", "5일 20일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
-            } else if (line5Entries.get(line5Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
-                NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName+ "매수신호", "5일 60일선 골크 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            if (isGold){
+                goldCorssNoti(candleEntries);
+            }
+            if (isDead){
+                deadCross(candleEntries);
             }
         } else {
 
@@ -315,7 +334,49 @@ public class DataService extends Service implements UpbitCallback{
         }
     }
 
+    private void goldCorssNoti(List<CandleEntry> array){
+        if (line5Entries.get(line5Entries.size() - 1).getY() > line10Entries.get(line10Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line10Entries.get(line10Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매수신호", "5일 10일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        } else if (line5Entries.get(line5Entries.size() - 1).getY() > line20Entries.get(line20Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line20Entries.get(line20Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매수신호", "5일 20일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        } else if (line5Entries.get(line5Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName+ "매수신호", "5일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        }
+    }
 
+
+    private void deadCross(List<CandleEntry> array){
+        if (line5Entries.get(line5Entries.size() - 1).getY() < line10Entries.get(line10Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() > line10Entries.get(line10Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매도신호", "5일 10일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        } else if (line5Entries.get(line5Entries.size() - 1).getY() < line20Entries.get(line20Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() > line20Entries.get(line20Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매도신호", "5일 20일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        } else if (line5Entries.get(line5Entries.size() - 1).getY() < line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() >line60Entries.get(line60Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName+ "매도신호", "5일 60일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        }
+    }
+
+    private void volCheck(int volCandle){
+        boolean isVolUp=false;
+        for (int i=0;i<volCandle; i++){
+            float preVolume =barEntries.get(barEntries.size()-1-volCandle).getY()*(1+(volPer/100f));
+            if (barEntries.get(barEntries.size()-1).getY()>preVolume){
+                isVolUp =true;
+                break;
+            }
+        }
+        if (isVolUp){
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "거래량 체크", "이전 "+volCandle+" 캔들 내 거래량 보다 "+volPer+" 증가 중");
+        }
+    }
+
+    private void rsiCheck(float rsi){
+        if (rsi<=30){
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "RSI 체크(매수)", "현재 RSI 가 "+(int)rsi +" 이므로 과매도 구간에 진입 하였습니다");
+        }
+        if (rsi>=65){
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "RSI 체크(매도", "현재 RSI 가 "+(int)rsi +" 이므로 과매수 구간에 진입 하였습니다");
+        }
+    }
     private void drawFirstData(List<Candle> candles) {
         for (int i = 0; i < candles.size(); i++) {
             Candle data = candles.get(candles.size() - 1 - i);
