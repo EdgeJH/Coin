@@ -46,12 +46,13 @@
                 android:layout_height="match_parent"
                 android:layout_alignParentEnd="true"
                 android:id="@+id/radar">
-                <ImageView
-                    android:layout_width="25dp"
-                    android:layout_height="25dp"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_centerInParent="true"
-
-                    android:src="@drawable/power"/>
+                    android:textSize="14dp"
+                    android:textColor="@color/line5"
+                    android:text="완료"/>
             </RelativeLayout>
         </RelativeLayout>
     </android.support.v7.widget.Toolbar>

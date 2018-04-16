@@ -317,10 +317,10 @@ public class DataService extends Service implements UpbitCallback{
 
     private void envelopNoti(List<CandleEntry> array){
         if (envelopeMinusEntries.get(envelopeMinusEntries.size()-1).getY()>=array.get(array.size()-1).getClose()){
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 하단 터치(과매도) " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 하단 터치(과매도)  / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         }
         if (envelopePlusEntries.get(envelopePlusEntries.size()-1).getY()>=array.get(array.size()-1).getClose()){
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 상단 터치 (과매수)" + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 상단 터치 (과매수)  / 현재가격 :" + (long) (array.get(array.size() - 1).getClose()));
         }
     }
 
@@ -331,6 +331,12 @@ public class DataService extends Service implements UpbitCallback{
             NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 20일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         } else if (line5Entries.get(line5Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
             NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "5일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        } else if (line10Entries.get(line10Entries.size() - 1).getY() > line20Entries.get(line20Entries.size() - 1).getY() && line10Entries.get(line10Entries.size() - 2).getY() < line20Entries.get(line20Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "10일 20일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        } else if (line10Entries.get(line10Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line10Entries.get(line10Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "10일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        }else if (line20Entries.get(line20Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line20Entries.get(line20Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "20일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         }
     }
 
@@ -342,6 +348,12 @@ public class DataService extends Service implements UpbitCallback{
             NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 20일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         } else if (line5Entries.get(line5Entries.size() - 1).getY() < line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() >line60Entries.get(line60Entries.size() - 2).getY()) {
             NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "5일 60일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        }else if (line10Entries.get(line10Entries.size() - 1).getY() < line20Entries.get(line20Entries.size() - 1).getY() && line10Entries.get(line10Entries.size() - 2).getY() > line20Entries.get(line20Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "10일 20일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        } else if (line10Entries.get(line10Entries.size() - 1).getY() < line60Entries.get(line60Entries.size() - 1).getY() && line10Entries.get(line10Entries.size() - 2).getY() >line60Entries.get(line60Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "10일 60일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+        } else if (line20Entries.get(line20Entries.size() - 1).getY() < line60Entries.get(line60Entries.size() - 1).getY() && line20Entries.get(line20Entries.size() - 2).getY() >line60Entries.get(line60Entries.size() - 2).getY()) {
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "20일 60일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         }
     }
 

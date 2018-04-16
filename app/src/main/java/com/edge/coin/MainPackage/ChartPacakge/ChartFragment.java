@@ -52,7 +52,8 @@ import java.util.List;
  */
 
 public class ChartFragment extends android.support.v4.app.Fragment implements ChartTask.View {
-    boolean isCreate=false;
+    boolean isCreate = false;
+    boolean isEnvel = false;
     ArrayList<CandleEntry> candleEntries = new ArrayList<>();
     ArrayList<Entry> line5Entries = new ArrayList<>();
     ArrayList<Entry> line10Entries = new ArrayList<>();
@@ -183,21 +184,28 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
                 switch (tab.getPosition()) {
                     case 0:
                         time = 1;
+                        isEnvel = false;
                         break;
                     case 1:
                         time = 5;
+                        isEnvel = false;
                         break;
                     case 2:
                         time = 15;
+                        isEnvel = false;
                         break;
                     case 3:
                         time = 30;
+                        isEnvel = false;
                         break;
                     case 4:
                         time = 60;
+                        isEnvel = false;
                         break;
                     case 5:
                         time = 240;
+                        isEnvel = true;
+                        break;
 
                 }
                 setValueFormat();
@@ -279,18 +287,11 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
 
     private void setCombinedChart() {
         combinedChart.getDescription().setEnabled(false);
-        combineLegend = combinedChart.getLegend();
-        LegendEntry legendEntry = new LegendEntry("5일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.line5));
-        LegendEntry legendEntry2 = new LegendEntry("10일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.line10));
-        LegendEntry legendEntry3 = new LegendEntry("20일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.line20));
-        LegendEntry legendEntry4 = new LegendEntry("60일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.line60));
-        LegendEntry[] entries = {legendEntry, legendEntry2, legendEntry3, legendEntry4};
-        combineLegend.setCustom(entries);
-        setLegend(combineLegend);
+
         combinedChart.setDrawOrder(new CombinedChart.DrawOrder[]{CombinedChart.DrawOrder.CANDLE, CombinedChart.DrawOrder.LINE, CombinedChart.DrawOrder.BAR});
         xAxis = combinedChart.getXAxis();
         setXAxis(xAxis);
-
+        setCombineLegend();
         leftAxis = combinedChart.getAxisLeft();
         leftAxis.setEnabled(true);
         leftAxis.setDrawLabels(false);
@@ -303,6 +304,24 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         combinedChart.setOnChartGestureListener(new CoupleChartGestureListener(combinedChart, new Chart[]{rsiChart, obvChart}));
         rsiChart.setOnChartGestureListener(new CoupleChartGestureListener(rsiChart, new Chart[]{combinedChart, obvChart}));
         obvChart.setOnChartGestureListener(new CoupleChartGestureListener(obvChart, new Chart[]{combinedChart, rsiChart}));
+    }
+
+    private void setCombineLegend() {
+        combineLegend = combinedChart.getLegend();
+        LegendEntry legendEntry = new LegendEntry("5일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.line5));
+        LegendEntry legendEntry2 = new LegendEntry("10일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.line10));
+        LegendEntry legendEntry3 = new LegendEntry("20일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.line20));
+        LegendEntry legendEntry4 = new LegendEntry("60일선", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.line60));
+        LegendEntry legendEntry5 = new LegendEntry("엔벨+", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.envelope));
+        LegendEntry legendEntry6 = new LegendEntry("엔벨-", Legend.LegendForm.LINE, 10f, 2f, null, ContextCompat.getColor(activity, R.color.envelope));
+        LegendEntry[] entries;
+        if (isEnvel) {
+            entries = new LegendEntry[]{legendEntry, legendEntry2, legendEntry3, legendEntry4, legendEntry5, legendEntry6};
+        } else {
+            entries = new LegendEntry[]{legendEntry, legendEntry2, legendEntry3, legendEntry4};
+        }
+        combineLegend.setCustom(entries);
+        setLegend(combineLegend);
     }
 
     private void setXAxis(XAxis xAxis) {
@@ -332,6 +351,8 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         if (isDarkTheme) {
             rightAxis.setTextColor(Color.LTGRAY);
             rightAxis.setAxisLineColor(Color.LTGRAY);
+            rightAxis.setGridColor(Color.parseColor("#443446"));
+            leftAxis.setGridColor(Color.parseColor("#443446"));
             rsiRightAxis.setTextColor(Color.LTGRAY);
             obvRightAxis.setTextColor(Color.LTGRAY);
 
@@ -345,12 +366,15 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
             obvXAxis.setAxisLineColor(Color.TRANSPARENT);
 
             xAxis.setTextColor(Color.LTGRAY);
+            xAxis.setGridColor(Color.parseColor("#443446"));
             xAxis.setAxisLineColor(Color.TRANSPARENT);
             dataSet.setIncreasingColor(ContextCompat.getColor(activity, R.color.increase_dark));
             dataSet.setDecreasingColor(ContextCompat.getColor(activity, R.color.decrease_dark));
         } else {
             rightAxis.setTextColor(Color.GRAY);
             rightAxis.setAxisLineColor(Color.GRAY);
+            rightAxis.setGridColor(Color.parseColor("#aaaaaa"));
+            leftAxis.setGridColor(Color.parseColor("#aaaaaa"));
             rsiRightAxis.setTextColor(Color.GRAY);
             obvRightAxis.setTextColor(Color.GRAY);
             combineLegend.setTextColor(Color.GRAY);
@@ -362,6 +386,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
             obvXAxis.setTextColor(Color.GRAY);
             obvXAxis.setAxisLineColor(Color.WHITE);
             xAxis.setTextColor(Color.GRAY);
+            xAxis.setGridColor(Color.parseColor("#aaaaaa"));
             xAxis.setAxisLineColor(Color.WHITE);
             dataSet.setIncreasingColor(ContextCompat.getColor(activity, R.color.increase_light));
             dataSet.setDecreasingColor(ContextCompat.getColor(activity, R.color.decrease_light));
@@ -414,12 +439,16 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         if (candleEntries.size() > 62) {
             combinedChart.setDrawOrder(new CombinedChart.DrawOrder[]{CombinedChart.DrawOrder.CANDLE, CombinedChart.DrawOrder.LINE, CombinedChart.DrawOrder.BAR});
 
-            if (!isCreate){
-                combinedChart.zoom(1.5f, 1f, candleEntries.size()-20 , candleEntries.get(candleEntries.size() - 1).getClose(), YAxis.AxisDependency.RIGHT);
-                combinedChart.zoom(1.5f, 1f, candleEntries.size()-20 , candleEntries.get(candleEntries.size() - 1).getClose(), YAxis.AxisDependency.RIGHT);
-                isCreate=true;
+            if (!isCreate) {
+                combinedChart.zoom(1.5f, 1f, candleEntries.size() - 20, candleEntries.get(candleEntries.size() - 1).getClose(), YAxis.AxisDependency.RIGHT);
+                combinedChart.zoom(1.5f, 1f, candleEntries.size() - 20, candleEntries.get(candleEntries.size() - 1).getClose(), YAxis.AxisDependency.RIGHT);
+                isCreate = true;
             }
-            lineData = new LineData(line5DataSet, line10DataSet, line20DataSet, line60DataSet);
+            if (isEnvel) {
+                lineData = new LineData(line5DataSet, line10DataSet, line20DataSet, line60DataSet, envelopePlusDataSet, envelopeMinusDataSet);
+            } else {
+                lineData = new LineData(line5DataSet, line10DataSet, line20DataSet, line60DataSet);
+            }
             combinedData.setData(lineData);
         } else if (candleEntries.size() > 22 && candleEntries.size() <= 60) {
             combinedChart.setDrawOrder(new CombinedChart.DrawOrder[]{CombinedChart.DrawOrder.CANDLE, CombinedChart.DrawOrder.LINE, CombinedChart.DrawOrder.BAR});
@@ -734,7 +763,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         setRsiData(candleEntries, 14);
 
         setCombinedChartData();
-
+        setCombineLegend();
         LoadingProgress.dismissDialog();
         presenterBridge.startRealTimeData(1, code);
     }
@@ -806,7 +835,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         envelopeMinusEntries.clear();
         envelopePlusEntries.clear();
         rsiEndtries.clear();
-      //  dataSetClear();
+        //  dataSetClear();
     }
 
     private void dataSetClear() {

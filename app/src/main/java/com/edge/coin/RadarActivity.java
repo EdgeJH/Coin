@@ -20,6 +20,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.edge.coin.ServicePackage.DataService;
+import com.edge.coin.UpbitPackage.TradeCoin;
 import com.edge.coin.Utils.SharedPreference;
 import com.edge.edge_centerseekbar.CenterSeekBar;
 
@@ -33,25 +34,29 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
     SharedPreference sharedPreference = new SharedPreference();
     boolean isDarkTheme;
     boolean isBind;
-    boolean isGold, isDead, isVol, isRsi;
+    boolean isGold, isDead, isVol, isRsi,isEnvel;
     DataService dataService;
     RelativeLayout back, startRadar;
     NiceSpinner coinSpinner, timeSpinner, volCandleSpinner;
-    List<String> coinName, coinCode, candleTime, volCandleList = new ArrayList<>();
+    List<String> coinName = new ArrayList<>();
+    List<String>candleTime = new ArrayList<>();
+    List<String>volCandleList = new ArrayList<>();
     String code, myRadarCoin;
-    String defaultCode = "CRIX.UPBIT.";
     int myRadarTime, volPer, volCandle, rsiBt, rsiT;
-    Switch goldCross, deadCross, volCheck, rsiCheck;
+    Switch goldCross, deadCross, volCheck, rsiCheck,envelCheck;
     LinearLayout volDetail, rsiDetail;
     CenterSeekBar volSeek, rsiBtSeek, rsiTopSeek;
     TextView volPercent, rsiBottom, rsiTop;
-
+    ArrayList<TradeCoin> coinList;
+    ArrayList<TradeCoin> krwCoinList = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setCoinList();
+        setCoinName();
         getData();
         initView();
-        bindService(new Intent(this, DataService.class), this, BIND_AUTO_CREATE);
+        //bindService(new Intent(this, DataService.class), this, BIND_AUTO_CREATE);
     }
 
     private void startRadar(String coinName, String code, int time) {
@@ -63,10 +68,12 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         intent.putExtra("isGold", isGold);
         intent.putExtra("isDead", isDead);
         intent.putExtra("isRsi", isRsi);
+        intent.putExtra("isEnvel",isEnvel);
         saveCheckState("rsiCheck", isRsi);
         saveCheckState("goldCross", isGold);
         saveCheckState("deadCross", isDead);
         saveCheckState("volCheck", isVol);
+        saveCheckState("envelCheck",isEnvel);
         sharedPreference.put(this, "time", time);
         sharedPreference.put(this, "coinName", coinName);
 
@@ -109,6 +116,9 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         volSeek.setProgress(volPer + 100);
         setVolDetail();
 
+        envelCheck = findViewById(R.id.envelope);
+        envelCheck.setOnCheckedChangeListener(this);
+
         rsiDetail = findViewById(R.id.rsi_detail);
         rsiBottom = findViewById(R.id.rsi_bottom);
         rsiTop = findViewById(R.id.rsi_top);
@@ -124,6 +134,7 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         rsiBtSeek.setProgress(rsiBt);
         rsiTopSeek.setProgress(rsiT - 50);
         setRsiDetail();
+        envelCheck.setChecked(isEnvel);
         rsiCheck.setChecked(isRsi);
         volCheck.setChecked(isVol);
         goldCross.setChecked(isGold);
@@ -137,6 +148,7 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         goldCross.setOnCheckedChangeListener(this);
 
     }
+
 
     private void setVolDetail() {
 
@@ -167,6 +179,7 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         volCandle = sharedPreference.getValue(this, "volCandle", 0);
         rsiT = sharedPreference.getValue(this, "rsiTop", 70);
         rsiBt = sharedPreference.getValue(this, "rsiBt", 30);
+        isEnvel= sharedPreference.getValue(this,"isEnvel",false);
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -195,7 +208,7 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unbindService(this);
+  //      unbindService(this);
     }
 
     private void setSpinner() {
@@ -204,8 +217,7 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         for (int i = 0; i < 100; i++) {
             volCandleList.add(String.valueOf(i + 1));
         }
-        coinName = Arrays.asList(getResources().getStringArray(R.array.coin_name));
-        coinCode = Arrays.asList(getResources().getStringArray(R.array.coin_code));
+
         candleTime = Arrays.asList(getResources().getStringArray(R.array.candle_time));
         timeSpinner.attachDataSource(candleTime);
         coinSpinner.attachDataSource(coinName);
@@ -223,12 +235,35 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
 
     }
 
+    private void setCoinList() {
+        coinList = sharedPreference.getCoinList(this, "coinList");
+        for (TradeCoin tradeCoin : coinList) {
+            switch (tradeCoin.getQuoteCurrencyCode()) {
+                case "KRW":
+                    if (tradeCoin.getMarketState().equals("ACTIVE") && tradeCoin.getExchange().equals("UPBIT")) {
+                        krwCoinList.add(tradeCoin);
+                    }
+                    break;
+                case "BTC":
+                    break;
+                case "ETH":
+                    break;
+                case "USDT":
+                    break;
+            }
+        }
+    }
+    private void setCoinName() {
+        for (int i = 0; i < krwCoinList.size(); i++) {
+            coinName.add(krwCoinList.get(i).getKoreanName());
+        }
+    }
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.radar:
                 String name = coinName.get(coinSpinner.getSelectedIndex());
-                code = defaultCode + coinCode.get(coinSpinner.getSelectedIndex());
+                code = krwCoinList.get(coinSpinner.getSelectedIndex()).getCode();
                 int time = Integer.parseInt(candleTime.get(timeSpinner.getSelectedIndex()).replaceAll("분봉", ""));
                 volPer = Integer.parseInt(volPercent.getText().toString().replace("%", ""));
                 volCandle = Integer.parseInt(volCandleList.get(volCandleSpinner.getSelectedIndex()));
@@ -259,6 +294,8 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
                 isRsi = b;
                 setRsiDetail();
                 break;
+            case R.id.envelope:
+                isEnvel = b;
 
         }
     }

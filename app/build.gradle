@@ -54,6 +54,7 @@ dependencies {
     compile('com.crashlytics.sdk.android:crashlytics:2.9.1@aar') {
         transitive = true;
     }
+    compile 'com.loopeer.lib:shadow:0.0.4-beta3'
     implementation project(':MPChartLib')
     implementation project(':nice-spinner-master')
 }
