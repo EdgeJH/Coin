@@ -32,21 +32,6 @@ public class NotificationManager {
         getManager(context).createNotificationChannelGroup(group1);
 
 
-        NotificationChannel channelMessage = new NotificationChannel(Channel.MESSAGE,
-                context.getString(R.string.notification_channel_message_title), android.app.NotificationManager.IMPORTANCE_DEFAULT);
-        channelMessage.setDescription(context.getString(R.string.notification_channel_message_description));
-        channelMessage.setGroup(GROUP_MY_COIN);
-        channelMessage.setLightColor(Color.GREEN);
-        channelMessage.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
-        getManager(context).createNotificationChannel(channelMessage);
-
-        NotificationChannel channelComment = new NotificationChannel(Channel.COMMENT,
-                context.getString(R.string.notification_channel_comment_title), android.app.NotificationManager.IMPORTANCE_DEFAULT);
-        channelComment.setDescription(context.getString(R.string.notification_channel_comment_description));
-        channelComment.setGroup(GROUP_MY_COIN);
-        channelComment.setLightColor(Color.BLUE);
-        channelComment.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        getManager(context).createNotificationChannel(channelComment);
 
         NotificationChannel channelNotice = new NotificationChannel(Channel.NOTICE,
                 context.getString(R.string.notification_channel_notice_title), android.app.NotificationManager.IMPORTANCE_HIGH);
@@ -118,6 +103,7 @@ public class NotificationManager {
                         .setColor(ContextCompat.getColor(service,R.color.line20))
                         .setWhen(System.currentTimeMillis())
                         .setShowWhen(true)
+                        .setPriority(Notification.PRIORITY_MAX)
                         .setSmallIcon(getSmallIcon())
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(true);
@@ -127,6 +113,7 @@ public class NotificationManager {
                         .setContentText(body)
                         .setSound(alarmSound)
                         .setShowWhen(true)
+                        .setPriority(Notification.PRIORITY_MAX)
                         .setWhen(System.currentTimeMillis())
                         .setSmallIcon(getSmallIcon())
                         .setContentIntent(pendingIntent)
@@ -145,13 +132,10 @@ public class NotificationManager {
 
     @Retention(RetentionPolicy.SOURCE)
     @StringDef({
-            Channel.MESSAGE,
-            Channel.COMMENT,
+
             Channel.NOTICE
     })
     public @interface Channel {
-        String MESSAGE = "message";
-        String COMMENT = "comment";
         String NOTICE = "notice";
     }
 

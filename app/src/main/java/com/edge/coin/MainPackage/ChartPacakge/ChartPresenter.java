@@ -1,4 +1,4 @@
-package com.edge.coin.MainPackage;
+package com.edge.coin.MainPackage.ChartPacakge;
 
 import com.edge.coin.UpbitPackage.UpbitData;
 import com.edge.coin.Utils.Candle;
@@ -10,13 +10,14 @@ import java.util.List;
  * Created by user1 on 2018-03-13.
  */
 
-public class MainPresenter implements MainTask.PresenterBridge,UpbitCallback {
-    private MainTask.View view;
+public class ChartPresenter implements ChartTask.PresenterBridge,UpbitCallback {
+    private ChartTask.View view;
     private UpbitData upbitData;
-    public MainPresenter(MainTask.View view) {
+    public ChartPresenter(ChartTask.View view) {
         this.view = view;
         view.setPresenterBridge(this);
-        upbitData = new UpbitData(this);
+        upbitData = new UpbitData();
+        upbitData.setUpbitCallback(this);
     }
 
     @Override

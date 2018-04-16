@@ -6,7 +6,6 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import com.edge.coin.UpbitPackage.UpbitCallback;
 import com.edge.coin.UpbitPackage.UpbitData;
@@ -41,7 +40,7 @@ public class DataService extends Service implements UpbitCallback{
     String code;
     String coinName;
     UpbitData upbitData;
-    boolean isVol,isGold,isDead,isRsi;
+    boolean isVol,isGold,isDead,isRsi,isEnvel;
     int volPer,volCandle,rsiBt,rsiT;
     private IBinder dataBinder = new DataBinder();
     int time;
@@ -68,10 +67,10 @@ public class DataService extends Service implements UpbitCallback{
             coinName= intent.getStringExtra("coinName");
             code = intent.getStringExtra("code");
             time = intent.getIntExtra("time",0);
-            Log.d("test123",code+",");
             isVol = intent.getBooleanExtra("isVol",false);
             isDead = intent.getBooleanExtra("isDead",false);
             isGold = intent.getBooleanExtra("isGold",false);
+            isEnvel = intent.getBooleanExtra("isEnvel",false);
 
             if (isVol){
                 volPer = sharedPreference.getValue(this,"volPer",0);
@@ -91,13 +90,14 @@ public class DataService extends Service implements UpbitCallback{
                 }
             },1000);
         }
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     @Override
     public void onCreate() {
 
-        upbitData =new UpbitData(this);
+        upbitData =new UpbitData();
+        upbitData.setUpbitCallback(this);
         super.onCreate();
     }
 
@@ -157,14 +157,12 @@ public class DataService extends Service implements UpbitCallback{
                         upAvg = ((upAvg * 13) + data.getBodyRange()) / 14;
                         downAvg = (downAvg * 13) / 14;
                     }
-                    //    Log.d("test1223","up avg = "+upAvg);
                     double rs = upAvg / downAvg;
                     float rsi = (float) (100 - (100 / (1 + rs)));
                     rsiEndtries.add(new Entry(guideDay - 1 + rsiEndtries.size(), rsi));
                 }
             }
         }
-
     }
 
     private void setRsiRealTimeData(CandleEntry data, float guideDay, boolean isNow) {
@@ -177,14 +175,10 @@ public class DataService extends Service implements UpbitCallback{
                 upAvg = ((upAvg * 13) + data.getBodyRange()) / 14;
                 downAvg = (downAvg * 13) / 14;
             }
-            //    Log.d("test1223","up avg = "+upAvg);
             double rs = upAvg / downAvg;
             float rsi = (float) (100 - (100 / (1 + rs)));
-            if (rsiEndtries.size()==2000){
-                rsiEndtries.remove(0);
-            }
+
             rsiEndtries.add(new Entry(guideDay + rsiEndtries.size(), rsi));
-            rsiCheck(rsi);
         } else {
             double up;
             double down;
@@ -195,38 +189,27 @@ public class DataService extends Service implements UpbitCallback{
                 up = ((upAvg * 13) + data.getBodyRange()) / 14;
                 down = (downAvg * 13) / 14;
             }
-            //    Log.d("test1223","up avg = "+upAvg);
             double rs = up / down;
             float rsi = (float) (100 - (100 / (1 + rs)));
 
-            //  Log.d("test1234",rsi+",,,"+upAvg+",,,,,"+downAvg+",,,,,,"+rs);
             rsiEndtries.get(rsiEndtries.size() - 1).setY(rsi);
         }
     }
-
     private void setBarData(List<Candle> array) {
-        float maxvol = 0;
-        for (Candle candle : array) {
+
+        for (int i =0; i<array.size(); i++) {
+            Candle candle = array.get(array.size() - 1 - i);
             double volume = candle.getCandleAccTradeVolume();
             float volumeFloat = (float) volume;
             barEntries.add(new BarEntry(barEntries.size(), volumeFloat));
-            if (maxvol == 0f) {
-                maxvol = volumeFloat;
-            } else {
-                if (volumeFloat > maxvol) {
-                    maxvol = volumeFloat;
-                }
-            }
-
         }
-
     }
 
     private void setRealTimeBar(Candle candle, boolean isNow) {
         double volume = candle.getCandleAccTradeVolume();
         float volumeFloat = (float) volume;
         if (!isNow) {
-            if (barEntries.size()==2000){
+            if (barEntries.size()==500){
                 barEntries.remove(0);
             }
             barEntries.add(new BarEntry(barEntries.size(), volumeFloat));
@@ -298,7 +281,7 @@ public class DataService extends Service implements UpbitCallback{
                     break;
             }
             if (isGold){
-                goldCorssNoti(candleEntries);
+                goldCrossNoti(candleEntries);
             }
             if (isDead){
                 deadCross(candleEntries);
@@ -307,7 +290,6 @@ public class DataService extends Service implements UpbitCallback{
 
             switch (guideDay) {
                 case 5:
-
                     line5Entries.get(line5Entries.size() - 1).setY(tradePrice / guideDay);
                     break;
                 case 10:
@@ -321,7 +303,6 @@ public class DataService extends Service implements UpbitCallback{
                     envelopeMinusEntries.get(envelopeMinusEntries.size() - 1).setY((long) tradePrice / guideDay * 0.8f);
                     break;
                 case 60:
-
                     line60Entries.get(line60Entries.size() - 1).setY(tradePrice / guideDay);
                     break;
             }
@@ -329,34 +310,44 @@ public class DataService extends Service implements UpbitCallback{
     }
 
     private void removeLineEntry(ArrayList<Entry> lineEntries){
-        if (lineEntries.size()==2000){
+        if (lineEntries.size()==500){
             lineEntries.remove(0);
         }
     }
 
-    private void goldCorssNoti(List<CandleEntry> array){
+    private void envelopNoti(List<CandleEntry> array){
+        if (envelopeMinusEntries.get(envelopeMinusEntries.size()-1).getY()>=array.get(array.size()-1).getClose()){
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 하단 터치(과매도) " + (long) (array.get(array.size() - 1).getClose()));
+        }
+        if (envelopePlusEntries.get(envelopePlusEntries.size()-1).getY()>=array.get(array.size()-1).getClose()){
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 상단 터치 (과매수)" + (long) (array.get(array.size() - 1).getClose()));
+        }
+    }
+
+    private void goldCrossNoti(List<CandleEntry> array){
         if (line5Entries.get(line5Entries.size() - 1).getY() > line10Entries.get(line10Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line10Entries.get(line10Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매수신호", "5일 10일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 10일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         } else if (line5Entries.get(line5Entries.size() - 1).getY() > line20Entries.get(line20Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line20Entries.get(line20Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매수신호", "5일 20일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 20일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         } else if (line5Entries.get(line5Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName+ "매수신호", "5일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "5일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         }
     }
 
 
     private void deadCross(List<CandleEntry> array){
         if (line5Entries.get(line5Entries.size() - 1).getY() < line10Entries.get(line10Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() > line10Entries.get(line10Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매도신호", "5일 10일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 10일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         } else if (line5Entries.get(line5Entries.size() - 1).getY() < line20Entries.get(line20Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() > line20Entries.get(line20Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "매도신호", "5일 20일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 20일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         } else if (line5Entries.get(line5Entries.size() - 1).getY() < line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() >line60Entries.get(line60Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName+ "매도신호", "5일 60일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "5일 60일선 데드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
         }
     }
 
     private void volCheck(int volCandle){
         boolean isVolUp=false;
+
         for (int i=0;i<volCandle; i++){
             float preVolume =barEntries.get(barEntries.size()-1-volCandle).getY()*(1+(volPer/100f));
             if (barEntries.get(barEntries.size()-1).getY()>preVolume){
@@ -365,16 +356,17 @@ public class DataService extends Service implements UpbitCallback{
             }
         }
         if (isVolUp){
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "거래량 체크", "이전 "+volCandle+" 캔들 내 거래량 보다 "+volPer+" 증가 중");
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "거래량 시그널", "이전 "+volCandle+" 캔들 내 거래량 보다 "+volPer+" 증가 중");
         }
     }
 
     private void rsiCheck(float rsi){
+
         if (rsi<=30){
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "RSI 체크(매수)", "현재 RSI 가 "+(int)rsi +" 이므로 과매도 구간에 진입 하였습니다");
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "RSI 시그널", "현재 RSI 가 "+(int)rsi +" 이므로 과매도 구간에 진입 하였습니다");
         }
         if (rsi>=65){
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.MESSAGE, coinName + "RSI 체크(매도", "현재 RSI 가 "+(int)rsi +" 이므로 과매수 구간에 진입 하였습니다");
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "RSI 시그널", "현재 RSI 가 "+(int)rsi +" 이므로 과매수 구간에 진입 하였습니다");
         }
     }
     private void drawFirstData(List<Candle> candles) {
@@ -405,7 +397,7 @@ public class DataService extends Service implements UpbitCallback{
             float highPrice = (float) candle.getHighPrice();
 //            currentPrice.setText(String.valueOf((long) tradePrice) + " 원");
             if (candleEntries.get(candleEntries.size() - 1).getOpen() != openingPrice) {
-                if (candleEntries.size()==2000){
+                if (candleEntries.size()==500){
                     candleEntries.remove(0);
                 }
                 candleEntries.add(new CandleEntry(candleEntries.size(), highPrice, lowPrice, openingPrice, tradePrice));

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Coin</string>
+    <string name="app_name">Signal</string>
     <string name="loading">차트데이터 로딩중 입니다</string>
     <string name="notification_channel_message_title">메세지</string>
     <string name="notification_channel_message_description">새 메세지를 받으면 알림을 받습니다.</string>

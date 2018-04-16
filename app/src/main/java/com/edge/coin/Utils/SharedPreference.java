@@ -3,12 +3,12 @@ package com.edge.coin.Utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.edge.coin.UpbitPackage.TradeCoin;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static android.content.Context.MODE_PRIVATE;
@@ -166,7 +166,7 @@ public class SharedPreference {
         }
     }
 
-    public void storeList(Context context, String key, List countries) {
+    public void storeCoinList(Context context, String key, ArrayList countries) {
 
         SharedPreferences settings;
         SharedPreferences.Editor editor;
@@ -178,51 +178,13 @@ public class SharedPreference {
         editor.apply();
     }
 
-    public ArrayList<String> loadList(Context context, String key) {
-
-        SharedPreferences settings;
-        List<String> favorites;
-        settings = context.getSharedPreferences(PREF_NAME, MODE_PRIVATE);
-        if (settings.contains(key)) {
-            String jsonFavorites = settings.getString(key, null);
-            Gson gson = new Gson();
-            String[] favoriteItems = gson.fromJson(jsonFavorites, String[].class);
-            favorites = Arrays.asList(favoriteItems);
-            favorites = new ArrayList<>(favorites);
-        } else
-            return null;
-        return (ArrayList<String>) favorites;
+    public ArrayList<TradeCoin> getCoinList(Context context, String key) {
+        SharedPreferences sharedPrefs = context.getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+        Gson gson = new Gson();
+        String json = sharedPrefs.getString(key, null);
+        ArrayList<TradeCoin> arrayList = gson.fromJson(json, new TypeToken<ArrayList<TradeCoin>>() {}.getType());
+        return arrayList;
     }
 
-    public void addList(Context context, String key, String country) {
-        List<String> favorites = loadList(context,key);
-        if (favorites == null)
-            favorites = new ArrayList<>();
 
-        if (favorites.contains(country)) {
-
-            favorites.remove(country);
-
-        }
-        favorites.add(country);
-
-        storeList(context,key, favorites);
-
-    }
-
-    public void removeList(Context context, String key, String country) {
-        ArrayList favorites = loadList(context,key);
-        if (favorites != null) {
-            favorites.remove(country);
-            storeList(context, key, favorites);
-        }
-    }
-
-    public void deleteList(Context context, String key) {
-        ArrayList<String> list = loadList(context,key);
-        if (list != null) {
-            list.clear();
-        }
-        storeList(context,key,list);
-    }
 }

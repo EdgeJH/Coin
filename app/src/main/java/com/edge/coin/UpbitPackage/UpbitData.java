@@ -1,11 +1,12 @@
 package com.edge.coin.UpbitPackage;
 
 import android.os.Handler;
-import android.util.Log;
 
+import com.edge.coin.Utils.ApiService;
 import com.edge.coin.Utils.Candle;
-import com.edge.coin.Utils.SetRetrofit;
+import com.edge.coin.Utils.RetrofitCall;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -23,13 +24,12 @@ public class UpbitData {
     Timer timer;
     TimerTask timerTask;
     UpbitCallback upbitCallback;
-    public UpbitData(UpbitCallback upbitCallback) {
-        this.upbitCallback = upbitCallback;
-    }
+    CoinListCallback coinListCallback;
+
 
     public void getFirstData(final int time, final String code) {
 
-        getCandelFirst = SetRetrofit.setRefrofit().get1MinuteCandle(time,code, 200, System.currentTimeMillis());
+        getCandelFirst = RetrofitCall.retrofit(ApiService.BASE_URL).get1MinuteCandle(time,code, 200, System.currentTimeMillis());
         getCandelFirst.enqueue(new Callback<List<Candle>>() {
             @Override
             public void onResponse(Call<List<Candle>> call, Response<List<Candle>> response) {
@@ -40,7 +40,7 @@ public class UpbitData {
 
             @Override
             public void onFailure(Call<List<Candle>> call, Throwable t) {
-                Log.d("test1234", t.getMessage());
+
             }
         });
     }
@@ -56,19 +56,21 @@ public class UpbitData {
             @Override
             public void run() {
                 long currentTime = System.currentTimeMillis();
-                getCandleRealTime = SetRetrofit.setRefrofit().get1MinuteCandle(time,code, 1, currentTime);
+                getCandleRealTime = RetrofitCall.retrofit(ApiService.BASE_URL).get1MinuteCandle(time,code, 1, currentTime);
                 getCandleRealTime.enqueue(new Callback<List<Candle>>() {
                     @Override
                     public void onResponse(Call<List<Candle>> call, Response<List<Candle>> response) {
                         if (response.isSuccessful()) {
-                            //Log.d("LOG123123", "onServiceDisconnected1111()");
-                            upbitCallback.getRealTimeResult(response.body());
+
+                            if (upbitCallback!=null){
+                                upbitCallback.getRealTimeResult(response.body());
+                            }
                         }
                     }
 
                     @Override
                     public void onFailure(Call<List<Candle>> call, Throwable t) {
-                        Log.d("test1234", t.getMessage());
+
                     }
                 });
             }
@@ -77,18 +79,20 @@ public class UpbitData {
     }
     public void getServiceFirstData(final int time, final String code) {
 
-        getCandelFirst = SetRetrofit.setRefrofit().get1MinuteCandle(time,code, 200, System.currentTimeMillis());
+        getCandelFirst =RetrofitCall.retrofit(ApiService.BASE_URL).get1MinuteCandle(time,code, 200, System.currentTimeMillis());
         getCandelFirst.enqueue(new Callback<List<Candle>>() {
             @Override
             public void onResponse(Call<List<Candle>> call, Response<List<Candle>> response) {
                 if (response.isSuccessful()) {
-                    upbitCallback.getFirstResult(response.body());
+                    if (upbitCallback!=null){
+                        upbitCallback.getFirstResult(response.body());
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<List<Candle>> call, Throwable t) {
-                Log.d("test1234", t.getMessage());
+
             }
         });
     }
@@ -104,13 +108,15 @@ public class UpbitData {
             @Override
             public void run() {
                 long currentTime = System.currentTimeMillis();
-                getCandleRealTime = SetRetrofit.setRefrofit().get1MinuteCandle(time,code, 1, currentTime);
+                getCandleRealTime = RetrofitCall.retrofit(ApiService.BASE_URL).get1MinuteCandle(time,code, 1, currentTime);
                 getCandleRealTime.enqueue(new Callback<List<Candle>>() {
                     @Override
                     public void onResponse(Call<List<Candle>> call, Response<List<Candle>> response) {
                         if (response.isSuccessful()) {
-                            //Log.d("LOG123123", "onServiceDisconnected1111()");
-                            upbitCallback.getRealTimeResult(response.body());
+
+                            if (upbitCallback!=null){
+                                upbitCallback.getRealTimeResult(response.body());
+                            }
                         }
                     }
 
@@ -129,9 +135,39 @@ public class UpbitData {
         };
         timer.schedule(timerTask, 0, 15000);
     }
+
+    public void getCoinList(){
+        Call<List<TradeCoin>> coin = RetrofitCall.retrofit(ApiService.COIN_URL).getCoinList(System.currentTimeMillis());
+        coin.enqueue(new Callback<List<TradeCoin>>() {
+            @Override
+            public void onResponse(Call<List<TradeCoin>> call, Response<List<TradeCoin>> response) {
+
+               if (response.isSuccessful()){
+                   if (coinListCallback!=null){
+                       coinListCallback.getCoinList((ArrayList<TradeCoin>) response.body());
+                   }
+               }
+            }
+
+            @Override
+            public void onFailure(Call<List<TradeCoin>> call, Throwable t) {
+
+            }
+        });
+    }
     public void stopData(){
         if (timer!=null){
             timer.cancel();
         }
+    }
+
+
+    public  void setUpbitCallback(UpbitCallback upbitCallback){
+            this.upbitCallback = upbitCallback;
+    }
+
+
+    public void setCoinListCallback(CoinListCallback coinListCallback){
+        this.coinListCallback =coinListCallback;
     }
 }

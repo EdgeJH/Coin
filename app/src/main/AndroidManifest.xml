@@ -24,6 +24,9 @@
         <service android:name=".ServicePackage.DataService" />
 
         <activity android:name=".RadarActivity"></activity>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="1507ebac14d23dc9042cfe521ca5720a96ccff03" />
     </application>
 
 </manifest>
