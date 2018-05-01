@@ -226,23 +226,23 @@ public class DataService extends Service implements UpbitCallback{
             if (i >= (int) guideDay - 1) {
                 int tradePrice = 0;
                 for (int j = 0; j < guideDay; j++) {
-                    tradePrice += (int) array.get(i - j).getClose();
+                    tradePrice +=  array.get(i - j).getClose();
                 }
                 int day = (int) guideDay;
                 switch (day) {
                     case 5:
-                        line5Entries.add(new Entry(guideDay - 1 + line5Entries.size(), (long) tradePrice / guideDay));
+                        line5Entries.add(new Entry(guideDay - 1 + line5Entries.size(),  tradePrice / guideDay));
                         break;
                     case 10:
-                        line10Entries.add(new Entry(guideDay - 1 + line10Entries.size(), (long) tradePrice / guideDay));
+                        line10Entries.add(new Entry(guideDay - 1 + line10Entries.size(), tradePrice / guideDay));
                         break;
                     case 20:
-                        line20Entries.add(new Entry(guideDay - 1 + line20Entries.size(), (long) tradePrice / guideDay));
-                        envelopePlusEntries.add(new Entry(guideDay - 1 + line20Entries.size(), ((long) tradePrice / guideDay) * 1.2f));
-                        envelopeMinusEntries.add(new Entry(guideDay - 1 + line20Entries.size(), ((long) tradePrice / guideDay) * 0.8f));
+                        line20Entries.add(new Entry(guideDay - 1 + line20Entries.size(),  tradePrice / guideDay));
+                        envelopePlusEntries.add(new Entry(guideDay - 1 + line20Entries.size(), ( tradePrice / guideDay) * 1.2f));
+                        envelopeMinusEntries.add(new Entry(guideDay - 1 + line20Entries.size(), (tradePrice / guideDay) * 0.8f));
                         break;
                     case 60:
-                        line60Entries.add(new Entry(guideDay - 1 + line60Entries.size(), (long) tradePrice / guideDay));
+                        line60Entries.add(new Entry(guideDay - 1 + line60Entries.size(),  tradePrice / guideDay));
                         break;
                 }
             }
@@ -272,8 +272,8 @@ public class DataService extends Service implements UpbitCallback{
                     line20Entries.add(new Entry(guideDay + line20Entries.size(), tradePrice / guideDay));
                     removeLineEntry(envelopePlusEntries);
                     removeLineEntry(envelopeMinusEntries);
-                    envelopePlusEntries.add(new Entry(guideDay + line20Entries.size(), ((long) tradePrice / guideDay) * 1.2f));
-                    envelopeMinusEntries.add(new Entry(guideDay + line20Entries.size(), ((long) tradePrice / guideDay) * 0.8f));
+                    envelopePlusEntries.add(new Entry(guideDay + line20Entries.size(), ( tradePrice / guideDay) * 1.2f));
+                    envelopeMinusEntries.add(new Entry(guideDay + line20Entries.size(), (tradePrice / guideDay) * 0.8f));
                     break;
                 case 60:
                     removeLineEntry(line60Entries);
@@ -285,6 +285,9 @@ public class DataService extends Service implements UpbitCallback{
             }
             if (isDead){
                 deadCross(candleEntries);
+            }
+            if (isEnvel){
+                envelopNoti(candleEntries);
             }
         } else {
 
@@ -299,8 +302,8 @@ public class DataService extends Service implements UpbitCallback{
                 case 20:
 
                     line20Entries.get(line20Entries.size() - 1).setY(tradePrice / guideDay);
-                    envelopePlusEntries.get(envelopePlusEntries.size() - 1).setY((long) tradePrice / guideDay * 1.2f);
-                    envelopeMinusEntries.get(envelopeMinusEntries.size() - 1).setY((long) tradePrice / guideDay * 0.8f);
+                    envelopePlusEntries.get(envelopePlusEntries.size() - 1).setY(tradePrice / guideDay * 1.2f);
+                    envelopeMinusEntries.get(envelopeMinusEntries.size() - 1).setY( tradePrice / guideDay * 0.8f);
                     break;
                 case 60:
                     line60Entries.get(line60Entries.size() - 1).setY(tradePrice / guideDay);
@@ -317,26 +320,26 @@ public class DataService extends Service implements UpbitCallback{
 
     private void envelopNoti(List<CandleEntry> array){
         if (envelopeMinusEntries.get(envelopeMinusEntries.size()-1).getY()>=array.get(array.size()-1).getClose()){
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 하단 터치(과매도)  / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 하단 터치(과매도)  / 현재가격 : " +  (array.get(array.size() - 1).getClose()));
         }
         if (envelopePlusEntries.get(envelopePlusEntries.size()-1).getY()>=array.get(array.size()-1).getClose()){
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 상단 터치 (과매수)  / 현재가격 :" + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "엔벨로프 상단 터치 (과매수)  / 현재가격 :" +  (array.get(array.size() - 1).getClose()));
         }
     }
 
     private void goldCrossNoti(List<CandleEntry> array){
         if (line5Entries.get(line5Entries.size() - 1).getY() > line10Entries.get(line10Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line10Entries.get(line10Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 10일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 10일선 골드크로스 / 현재가격 : " +  (array.get(array.size() - 1).getClose()));
         } else if (line5Entries.get(line5Entries.size() - 1).getY() > line20Entries.get(line20Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line20Entries.get(line20Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 20일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "5일 20일선 골드크로스 / 현재가격 : " +  (array.get(array.size() - 1).getClose()));
         } else if (line5Entries.get(line5Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line5Entries.get(line5Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "5일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "5일 60일선 골드크로스 / 현재가격 : " +  (array.get(array.size() - 1).getClose()));
         } else if (line10Entries.get(line10Entries.size() - 1).getY() > line20Entries.get(line20Entries.size() - 1).getY() && line10Entries.get(line10Entries.size() - 2).getY() < line20Entries.get(line20Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "10일 20일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName + "시그널", "10일 20일선 골드크로스 / 현재가격 : " +  (array.get(array.size() - 1).getClose()));
         } else if (line10Entries.get(line10Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line10Entries.get(line10Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "10일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "10일 60일선 골드크로스 / 현재가격 : " +  (array.get(array.size() - 1).getClose()));
         }else if (line20Entries.get(line20Entries.size() - 1).getY() > line60Entries.get(line60Entries.size() - 1).getY() && line20Entries.get(line20Entries.size() - 2).getY() < line60Entries.get(line60Entries.size() - 2).getY()) {
-            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "20일 60일선 골드크로스 / 현재가격 : " + (long) (array.get(array.size() - 1).getClose()));
+            NotificationManager.startForgroundNoti(this, 1, NotificationManager.Channel.NOTICE, coinName+ "시그널", "20일 60일선 골드크로스 / 현재가격 : " +  (array.get(array.size() - 1).getClose()));
         }
     }
 

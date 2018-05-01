@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.edge.coin.MainPackage.MainActivity;
@@ -44,6 +45,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 
 import org.angmarch.views.NiceSpinner;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,9 +53,11 @@ import java.util.List;
  * Created by user1 on 2018-03-22.
  */
 
-public class ChartFragment extends android.support.v4.app.Fragment implements ChartTask.View {
+public class ChartFragment extends android.support.v4.app.Fragment implements ChartTask.View, View.OnClickListener {
     boolean isCreate = false;
     boolean isEnvel = false;
+    boolean isKrw=true;
+    RelativeLayout krwMarket,btcMarket;
     ArrayList<CandleEntry> candleEntries = new ArrayList<>();
     ArrayList<Entry> line5Entries = new ArrayList<>();
     ArrayList<Entry> line10Entries = new ArrayList<>();
@@ -90,10 +94,11 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
     LineChart rsiChart;
 
     String code;
-    String defaultCode = "CRIX.UPBIT.";
+
 
     ArrayList<TradeCoin> coinList;
     ArrayList<TradeCoin> krwCoinList = new ArrayList<>();
+    ArrayList<TradeCoin> btcCoinList = new ArrayList<>();
     ArrayList<String> coinName = new ArrayList<>();
     NiceSpinner spinner;
     boolean isChanged = false;
@@ -110,7 +115,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
     boolean isDarkTheme = false;
     SharedPreference sharedPreference = new SharedPreference();
 
-
+    DecimalFormat df = new DecimalFormat("#.#########");
     MainActivity activity;
 
     @Override
@@ -127,7 +132,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         presenter = new ChartPresenter(this);
         setCoinList();
         code = krwCoinList.get(0).getCode();
-        setCoinName();
+
         isDarkTheme = sharedPreference.getValue(activity, "theme", false);
         View view = inflater.inflate(R.layout.frag_chart, container, false);
         initView(view);
@@ -141,9 +146,16 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         return view;
     }
 
-    private void setCoinName() {
+    private void setKrwCoinName() {
+        coinName.clear();
         for (int i = 0; i < krwCoinList.size(); i++) {
             coinName.add(krwCoinList.get(i).getKoreanName());
+        }
+    }
+    private void setBtcCoinName() {
+        coinName.clear();
+        for (int i = 0; i < btcCoinList.size(); i++) {
+            coinName.add(btcCoinList.get(i).getKoreanName());
         }
     }
 
@@ -157,6 +169,9 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
                     }
                     break;
                 case "BTC":
+                    if (tradeCoin.getMarketState().equals("ACTIVE") && tradeCoin.getExchange().equals("UPBIT")) {
+                        btcCoinList.add(tradeCoin);
+                    }
                     break;
                 case "ETH":
                     break;
@@ -173,6 +188,11 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         rsiChart = rootView.findViewById(R.id.rsi);
         tabLayout = rootView.findViewById(R.id.tab_layout);
         obvChart = rootView.findViewById(R.id.obv);
+        krwMarket = rootView.findViewById(R.id.krw_market);
+        btcMarket= rootView.findViewById(R.id.btc_market);
+        krwMarket.setSelected(true);
+        krwMarket.setOnClickListener(this);
+        btcMarket.setOnClickListener(this);
     }
 
 
@@ -225,13 +245,22 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
     }
 
     private void setSpinner() {
+        if (isKrw){
+            setKrwCoinName();
+        } else {
+            setBtcCoinName();
+        }
 
         spinner.attachDataSource(coinName);
         spinner.addOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 LoadingProgress.showDialog(activity, true);
-                code = krwCoinList.get(position).getCode();
+                if (isKrw){
+                    code = krwCoinList.get(position).getCode();
+                } else {
+                    code = btcCoinList.get(position).getCode();
+                }
                 getData();
                 isChanged = true;
             }
@@ -260,6 +289,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         obvLeftAxis.setEnabled(false);
         obvRightAxis = obvChart.getAxisRight();
         setYAixs(obvRightAxis);
+
     }
 
     private void setRsiChart() {
@@ -275,7 +305,6 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         rsiLeftAxis.setEnabled(false);
         rsiRightAxis = rsiChart.getAxisRight();
         setYAixs(rsiRightAxis);
-        rsiRightAxis.addLimitLine(new LimitLine(30, ""));
         rsiRightAxis.addLimitLine(new LimitLine(70, ""));
     }
 
@@ -287,7 +316,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
 
     private void setCombinedChart() {
         combinedChart.getDescription().setEnabled(false);
-
+        combinedChart.setPinchZoom(true);
         combinedChart.setDrawOrder(new CombinedChart.DrawOrder[]{CombinedChart.DrawOrder.CANDLE, CombinedChart.DrawOrder.LINE, CombinedChart.DrawOrder.BAR});
         xAxis = combinedChart.getXAxis();
         setXAxis(xAxis);
@@ -440,7 +469,6 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
             combinedChart.setDrawOrder(new CombinedChart.DrawOrder[]{CombinedChart.DrawOrder.CANDLE, CombinedChart.DrawOrder.LINE, CombinedChart.DrawOrder.BAR});
 
             if (!isCreate) {
-                combinedChart.zoom(1.5f, 1f, candleEntries.size() - 20, candleEntries.get(candleEntries.size() - 1).getClose(), YAxis.AxisDependency.RIGHT);
                 combinedChart.zoom(1.5f, 1f, candleEntries.size() - 20, candleEntries.get(candleEntries.size() - 1).getClose(), YAxis.AxisDependency.RIGHT);
                 isCreate = true;
             }
@@ -666,27 +694,27 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         if (array.size() > guideDay) {
             for (int i = 0; i < array.size(); i++) {
                 if (i >= (int) guideDay - 1) {
-                    int tradePrice = 0;
+                    float tradePrice = 0;
                     for (int j = 0; j < guideDay; j++) {
-                        tradePrice += (int) array.get(i - j).getClose();
+                        tradePrice +=  array.get(i - j).getClose();
                     }
                     int day = (int) guideDay;
                     switch (day) {
                         case 5:
-                            line5Entries.add(new Entry(guideDay - 1 + line5Entries.size(), (long) tradePrice / guideDay));
+                            line5Entries.add(new Entry(guideDay - 1 + line5Entries.size(),  tradePrice / guideDay));
                             break;
                         case 10:
-                            line10Entries.add(new Entry(guideDay - 1 + line10Entries.size(), (long) tradePrice / guideDay));
+                            line10Entries.add(new Entry(guideDay - 1 + line10Entries.size(),  tradePrice / guideDay));
                             break;
                         case 20:
 
-                            line20Entries.add(new Entry(guideDay - 1 + line20Entries.size(), (long) tradePrice / guideDay));
-                            envelopePlusEntries.add(new Entry(guideDay - 1 + line20Entries.size(), ((long) tradePrice / guideDay) * 1.2f));
-                            envelopeMinusEntries.add(new Entry(guideDay - 1 + line20Entries.size(), ((long) tradePrice / guideDay) * 0.8f));
+                            line20Entries.add(new Entry(guideDay - 1 + line20Entries.size(),  tradePrice / guideDay));
+                            envelopePlusEntries.add(new Entry(guideDay - 1 + line20Entries.size(), (tradePrice / guideDay) * 1.2f));
+                            envelopeMinusEntries.add(new Entry(guideDay - 1 + line20Entries.size(), (tradePrice / guideDay) * 0.8f));
                             break;
                         case 60:
 
-                            line60Entries.add(new Entry(guideDay - 1 + line60Entries.size(), (long) tradePrice / guideDay));
+                            line60Entries.add(new Entry(guideDay - 1 + line60Entries.size(),  tradePrice / guideDay));
                             break;
                     }
                 }
@@ -694,7 +722,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         }
     }
 
-    private void setRealTimeLineData(List<CandleEntry> array, int guideDay, boolean isNow) {
+    private void setRealTimeLineData(List<CandleEntry> array, float guideDay, boolean isNow) {
         float tradePrice = 0f;
         if (array.size() > guideDay) {
 
@@ -705,7 +733,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
                 }
             }
             if (!isNow) {
-                switch (guideDay) {
+                switch ((int) guideDay) {
                     case 5:
                         line5Entries.add(new Entry(guideDay + line5Entries.size(), tradePrice / guideDay));
                         break;
@@ -714,8 +742,8 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
                         break;
                     case 20:
                         line20Entries.add(new Entry(guideDay + line20Entries.size(), tradePrice / guideDay));
-                        envelopePlusEntries.add(new Entry(guideDay + line20Entries.size(), ((long) tradePrice / guideDay) * 1.2f));
-                        envelopeMinusEntries.add(new Entry(guideDay + line20Entries.size(), ((long) tradePrice / guideDay) * 0.8f));
+                        envelopePlusEntries.add(new Entry(guideDay + line20Entries.size(),  (tradePrice / guideDay) * 1.2f));
+                        envelopeMinusEntries.add(new Entry(guideDay + line20Entries.size(), ( tradePrice / guideDay) * 0.8f));
                         break;
                     case 60:
                         line60Entries.add(new Entry(guideDay + line60Entries.size(), tradePrice / guideDay));
@@ -724,7 +752,7 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
 
             } else {
 
-                switch (guideDay) {
+                switch ((int) guideDay) {
                     case 5:
                         line5Entries.get(line5Entries.size() - 1).setY(tradePrice / guideDay);
                         break;
@@ -733,8 +761,8 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
                         break;
                     case 20:
                         line20Entries.get(line20Entries.size() - 1).setY(tradePrice / guideDay);
-                        envelopePlusEntries.get(envelopePlusEntries.size() - 1).setY((long) tradePrice / guideDay * 1.2f);
-                        envelopeMinusEntries.get(envelopeMinusEntries.size() - 1).setY((long) tradePrice / guideDay * 0.8f);
+                        envelopePlusEntries.get(envelopePlusEntries.size() - 1).setY(tradePrice / guideDay * 1.2f);
+                        envelopeMinusEntries.get(envelopeMinusEntries.size() - 1).setY( tradePrice / guideDay * 0.8f);
                         break;
                     case 60:
                         line60Entries.get(line60Entries.size() - 1).setY(tradePrice / guideDay);
@@ -774,7 +802,11 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
             float tradePrice = (float) candle.getTradePrice();
             float lowPrice = (float) candle.getLowPrice();
             float highPrice = (float) candle.getHighPrice();
-            currentPrice.setText(String.valueOf((long) tradePrice) + " 원");
+            if (isKrw){
+                currentPrice.setText(String.valueOf((long) tradePrice) + " 원");
+            } else {
+                currentPrice.setText(String.valueOf(df.format((double)tradePrice)) + " BTC");
+            }
             if (candleEntries.get(candleEntries.size() - 1).getOpen() != openingPrice) {
                 candleEntries.add(new CandleEntry(candleEntries.size(), highPrice, lowPrice, openingPrice, tradePrice));
                 setRealTimeLineData(candleEntries, 5, false);
@@ -903,4 +935,34 @@ public class ChartFragment extends android.support.v4.app.Fragment implements Ch
         drawRealTime(candleEntries);
     }
 
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()){
+            case R.id.krw_market:
+                isKrw= true;
+                btcMarket.setSelected(false);
+                krwMarket.setSelected(true);
+                setSpinner();
+                changeMarket();
+                break;
+            case R.id.btc_market:
+                isKrw= false;
+                btcMarket.setSelected(true);
+                krwMarket.setSelected(false);
+                setSpinner();
+                changeMarket();
+                break;
+        }
+    }
+
+    private void  changeMarket(){
+        LoadingProgress.showDialog(activity, true);
+        if (isKrw){
+            code = krwCoinList.get(0).getCode();
+        } else {
+            code = btcCoinList.get(0).getCode();
+        }
+        getData();
+        isChanged = true;
+    }
 }

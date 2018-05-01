@@ -13,11 +13,11 @@ import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Switch;
-import android.widget.TextView;
 
 import com.edge.coin.ServicePackage.DataService;
 import com.edge.coin.UpbitPackage.TradeCoin;
@@ -34,7 +34,7 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
     SharedPreference sharedPreference = new SharedPreference();
     boolean isDarkTheme;
     boolean isBind;
-    boolean isGold, isDead, isVol, isRsi,isEnvel;
+    boolean isGold, isDead, isVol, isRsi,isEnvel,isAlarm, isGoldSet, isDeadSet, isVolSet, isRsiSet,isEnvelSet;
     DataService dataService;
     RelativeLayout back, startRadar;
     NiceSpinner coinSpinner, timeSpinner, volCandleSpinner;
@@ -43,12 +43,13 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
     List<String>volCandleList = new ArrayList<>();
     String code, myRadarCoin;
     int myRadarTime, volPer, volCandle, rsiBt, rsiT;
-    Switch goldCross, deadCross, volCheck, rsiCheck,envelCheck;
+    Switch goldCross, deadCross, volCheck, rsiCheck,envelCheck,alarmSwitch;
     LinearLayout volDetail, rsiDetail;
     CenterSeekBar volSeek, rsiBtSeek, rsiTopSeek;
-    TextView volPercent, rsiBottom, rsiTop;
+    EditText volPercent, rsiBottom, rsiTop;
     ArrayList<TradeCoin> coinList;
     ArrayList<TradeCoin> krwCoinList = new ArrayList<>();
+    ArrayList<TradeCoin> btcCoinList = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,6 +75,7 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         saveCheckState("deadCross", isDead);
         saveCheckState("volCheck", isVol);
         saveCheckState("envelCheck",isEnvel);
+        saveCheckState("isAlarm",isAlarm);
         sharedPreference.put(this, "time", time);
         sharedPreference.put(this, "coinName", coinName);
 
@@ -85,11 +87,15 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
             sharedPreference.put(this, "volPer", volPer);
             sharedPreference.put(this, "volCandle", volCandle);
         }
-        if (isMyServiceRunning(DataService.class)) {
-            stopService(new Intent(this, DataService.class));
-            startService(intent);
+        if (isAlarm){
+            if (isMyServiceRunning(DataService.class)) {
+                stopService(new Intent(this, DataService.class));
+                startService(intent);
+            } else {
+                startService(intent);
+            }
         } else {
-            startService(intent);
+            stopService(new Intent(this, DataService.class));
         }
     }
 
@@ -119,6 +125,9 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         envelCheck = findViewById(R.id.envelope);
         envelCheck.setOnCheckedChangeListener(this);
 
+        alarmSwitch = findViewById(R.id.alarm_switch);
+
+        alarmSwitch.setOnCheckedChangeListener(this);
         rsiDetail = findViewById(R.id.rsi_detail);
         rsiBottom = findViewById(R.id.rsi_bottom);
         rsiTop = findViewById(R.id.rsi_top);
@@ -134,11 +143,14 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         rsiBtSeek.setProgress(rsiBt);
         rsiTopSeek.setProgress(rsiT - 50);
         setRsiDetail();
-        envelCheck.setChecked(isEnvel);
-        rsiCheck.setChecked(isRsi);
-        volCheck.setChecked(isVol);
-        goldCross.setChecked(isGold);
-        deadCross.setChecked(isDead);
+        alarmSwitch.setChecked(isAlarm);
+        if (isAlarm){
+            envelCheck.setChecked(isEnvel);
+            rsiCheck.setChecked(isRsi);
+            volCheck.setChecked(isVol);
+            goldCross.setChecked(isGold);
+            deadCross.setChecked(isDead);
+        }
         setSpinner();
         startRadar.setOnClickListener(this);
         back.setOnClickListener(this);
@@ -147,23 +159,28 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         volCheck.setOnCheckedChangeListener(this);
         goldCross.setOnCheckedChangeListener(this);
 
+
     }
 
 
     private void setVolDetail() {
 
-        if (isVol) {
-            volDetail.setVisibility(View.VISIBLE);
-        } else {
-            volDetail.setVisibility(View.GONE);
+        if (isAlarm){
+            if (isVol) {
+                volDetail.setVisibility(View.VISIBLE);
+            } else {
+                volDetail.setVisibility(View.GONE);
+            }
         }
     }
 
     private void setRsiDetail() {
-        if (isRsi) {
-            rsiDetail.setVisibility(View.VISIBLE);
-        } else {
-            rsiDetail.setVisibility(View.GONE);
+        if (isAlarm){
+            if (isRsi) {
+                rsiDetail.setVisibility(View.VISIBLE);
+            } else {
+                rsiDetail.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -180,6 +197,13 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
         rsiT = sharedPreference.getValue(this, "rsiTop", 70);
         rsiBt = sharedPreference.getValue(this, "rsiBt", 30);
         isEnvel= sharedPreference.getValue(this,"isEnvel",false);
+        isAlarm  = sharedPreference.getValue(this,"isAlarm",false);
+
+        isGoldSet =isGold;
+        isDeadSet = isDead;
+        isVolSet= isVol;
+        isRsiSet = isRsi;
+        isEnvelSet=isEnvel;
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -245,6 +269,9 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
                     }
                     break;
                 case "BTC":
+                    if (tradeCoin.getMarketState().equals("ACTIVE") && tradeCoin.getExchange().equals("UPBIT")) {
+                        btcCoinList.add(tradeCoin);
+                    }
                     break;
                 case "ETH":
                     break;
@@ -296,6 +323,26 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
                 break;
             case R.id.envelope:
                 isEnvel = b;
+                break;
+            case R.id.alarm_switch:
+                isAlarm =b;
+                if(!isAlarm){
+                    rsiCheck.setChecked(b);
+                    envelCheck.setChecked(b);
+                    volCheck.setChecked(b);
+                    goldCross.setChecked(b);
+                    deadCross.setChecked(b);
+                    rsiDetail.setVisibility(View.GONE);
+                    volDetail.setVisibility(View.GONE);
+                } else {
+                    rsiCheck.setChecked(isRsiSet);
+                    envelCheck.setChecked(isEnvelSet);
+                    volCheck.setChecked(isVolSet);
+                    goldCross.setChecked(isGoldSet);
+                    deadCross.setChecked(isDeadSet);
+
+                }
+                break;
 
         }
     }
@@ -333,30 +380,42 @@ public class RadarActivity extends AppCompatActivity implements ServiceConnectio
     private void showDialog(final String name, final int time) {
 
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(RadarActivity.this);
-        // AlertDialog 셋팅
-        alertDialogBuilder
-                .setTitle(name+" 모니터링")
-                .setMessage("\n"+"상단 알림을 통해  " + name + "  모니터링을 시작합니다. 바로 시작하시겠습니까?")
-                .setIcon(R.mipmap.ic_launcher)
-                .setCancelable(false)
-                .setNegativeButton("취소",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(
-                                    DialogInterface dialog, int id) {
-                                // 다이얼로그를 취소한다
-                                dialog.dismiss();
 
-                            }
-                        })
-                .setPositiveButton("시작하기", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        startRadar(name, code, time);
-                        finish();
-                        dialogInterface.dismiss();
-                    }
-                });
+        if (isAlarm){
+            alertDialogBuilder.setTitle(name+" 모니터링 시작");
+            alertDialogBuilder  .setMessage("\n"+"상단 알림을 통해  " + name + "  모니터링을 시작합니다. 바로 시작하시겠습니까?");
+            alertDialogBuilder .setPositiveButton("시작하기", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    startRadar(name, code, time);
+                    finish();
+                    dialogInterface.dismiss();
+                }
+            });
+        } else {
+            alertDialogBuilder.setTitle(" 모니터링 중단");
+            alertDialogBuilder  .setMessage("\n"+"모니터링을 중지 하시겠습니까?");
+            alertDialogBuilder .setPositiveButton("중단하기", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    startRadar(name, code, time);
+                    finish();
+                    dialogInterface.dismiss();
+                }
+            });
+            // AlertDialog 셋팅
+            alertDialogBuilder.setIcon(R.mipmap.ic_launcher)
+                    .setCancelable(false)
+                    .setNegativeButton("취소",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(
+                                        DialogInterface dialog, int id) {
+                                    // 다이얼로그를 취소한다
+                                    dialog.dismiss();
 
+                                }
+                            });
+        }
         // 다이얼로그 생성
         final AlertDialog alertDialog = alertDialogBuilder.create();
         alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {

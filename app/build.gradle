@@ -57,4 +57,5 @@ dependencies {
     compile 'com.loopeer.lib:shadow:0.0.4-beta3'
     implementation project(':MPChartLib')
     implementation project(':nice-spinner-master')
+    compile 'org.jsoup:jsoup:1.11.3'
 }

@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.edge.coin.MainPackage.AnalyticsPackage.AnalyFragment;
 import com.edge.coin.MainPackage.ChartPacakge.ChartFragment;
 import com.edge.coin.R;
@@ -30,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements  View.OnClickList
     MenuItem menuItem;
     OnBackListener onBackListener;
     OnScrollTopListener onScrollTopListener;
+    LottieAnimationView lottieAnimationView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,6 +47,8 @@ public class MainActivity extends AppCompatActivity implements  View.OnClickList
         radar = findViewById(R.id.radar);
         viewPager = findViewById(R.id.viewpager);
         themeIcon = findViewById(R.id.theme_icon);
+        lottieAnimationView = findViewById(R.id.lottie);
+        lottieAnimationView.setSpeed(1.5f);
         bottomNavigationView = findViewById(R.id.bt_nav);
         bottomNavigationView.setOnNavigationItemSelectedListener(this);
         changeTheme.setOnClickListener(this);
